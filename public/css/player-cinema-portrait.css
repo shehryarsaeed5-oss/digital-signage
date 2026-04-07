@@ -128,6 +128,10 @@ body {
   box-shadow: 0 -0.8vh 2vh rgba(0, 0, 0, 0.5);
 }
 
+.portrait-info-strip.is-ad-mode {
+  display: none !important;
+}
+
 .portrait-status-badge {
   position: relative;
   display: flex;

@@ -462,6 +462,7 @@ function hideAdOverlay() {
     return;
   }
 
+  setAdMode(false);
   adOverlayNode.style.display = 'none';
   adOverlayNode.setAttribute('aria-hidden', 'true');
   const imageNode = adOverlayNode.querySelector('img');
@@ -481,6 +482,12 @@ function hideAdOverlay() {
     videoNode.style.display = 'none';
     videoNode.removeAttribute('src');
     videoNode.load();
+  }
+}
+
+function setAdMode(isAd) {
+  if (statusNode) {
+    statusNode.hidden = isAd;
   }
 }
 
@@ -525,6 +532,7 @@ function showImageAd(adItem, playbackToken) {
     imageNode.style.display = 'block';
     adOverlayNode.style.display = 'flex';
     adOverlayNode.setAttribute('aria-hidden', 'false');
+    setAdMode(true);
     handleAdvance();
   };
 
@@ -590,6 +598,7 @@ function showVideoAd(adItem, playbackToken) {
     videoNode.style.display = 'block';
     adOverlayNode.style.display = 'flex';
     adOverlayNode.setAttribute('aria-hidden', 'false');
+    setAdMode(true);
   };
 
   videoNode.src = adItem.file;

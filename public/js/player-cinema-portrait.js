@@ -27,6 +27,7 @@ const slideNodes = [
   {
     root: document.getElementById('portrait-slide-primary'),
     poster: document.getElementById('portrait-poster-primary'),
+    footer: document.querySelector('#portrait-slide-primary .portrait-info-strip'),
     status: document.getElementById('portrait-status-primary'),
     title: document.getElementById('portrait-title-primary'),
     showtimes: document.getElementById('portrait-showtimes-primary'),
@@ -34,6 +35,7 @@ const slideNodes = [
   {
     root: document.getElementById('portrait-slide-secondary'),
     poster: document.getElementById('portrait-poster-secondary'),
+    footer: document.querySelector('#portrait-slide-secondary .portrait-info-strip'),
     status: document.getElementById('portrait-status-secondary'),
     title: document.getElementById('portrait-title-secondary'),
     showtimes: document.getElementById('portrait-showtimes-secondary'),
@@ -448,7 +450,37 @@ function renderShowtimes(node, item) {
 }
 
 function renderSlide(slot, item) {
+  const isAd = item?.playlistType === 'ad';
+  if (slot.footer) {
+    slot.footer.classList.toggle('is-ad-mode', isAd);
+    slot.footer.hidden = isAd;
+    slot.footer.style.display = isAd ? 'none' : '';
+  }
+  if (slot.title) {
+    slot.title.hidden = isAd;
+  }
+  if (slot.status) {
+    slot.status.hidden = isAd;
+  }
+  if (slot.showtimes) {
+    slot.showtimes.hidden = isAd;
+  }
+
   renderPoster(slot.poster, item);
+
+  if (isAd) {
+    if (slot.status) {
+      slot.status.innerHTML = '';
+    }
+    if (slot.title) {
+      slot.title.textContent = '';
+    }
+    if (slot.showtimes) {
+      slot.showtimes.innerHTML = '';
+    }
+    return;
+  }
+
   renderStatus(slot.status, item);
   slot.title.textContent = item.title;
   renderShowtimes(slot.showtimes, item);
