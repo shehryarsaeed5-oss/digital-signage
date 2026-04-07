@@ -5,6 +5,7 @@ const {
   SCREEN_PLAYER_SETTING_DEFAULTS,
   getScreenPlayerSettings,
   listScreenPlayerSettings,
+  normalizeScreenName,
 } = require('../repositories/playerSettingsRepository');
 
 function normalizeScreenLabel(label) {
@@ -12,7 +13,7 @@ function normalizeScreenLabel(label) {
   if (text.includes('3x2')) return 'cinema-3x2';
   if (text.includes('portrait')) return 'cinema-portrait';
   if (text.includes('cinema')) return 'cinema';
-  return text;
+  return '';
 }
 
 function mapApiToDb(data) {
@@ -24,9 +25,11 @@ function mapApiToDb(data) {
   if (data.file !== undefined) mapped.file_path = data.file;
   
   if (Array.isArray(data.screens)) {
-    mapped.screen_targets = data.screens.map(normalizeScreenLabel).join(',');
+    const screenTargets = data.screens.map(normalizeScreenLabel).filter(Boolean);
+    mapped.screen_targets = screenTargets.length > 0 ? screenTargets.join(',') : null;
   } else if (data.screens !== undefined) {
-    mapped.screen_targets = normalizeScreenLabel(data.screens);
+    const screenTarget = normalizeScreenLabel(data.screens);
+    mapped.screen_targets = screenTarget || null;
   }
 
   // Default type if missing for new ads
@@ -37,6 +40,48 @@ function mapApiToDb(data) {
   }
 
   return mapped;
+}
+
+function resolveScreenFromRequest(req) {
+  const queryScreen = normalizeScreenName(req.query.screen);
+  if (queryScreen) {
+    return queryScreen;
+  }
+
+  const referer = req.get('referer') || req.get('referrer') || '';
+  if (referer) {
+    try {
+      const refererPath = new URL(referer).pathname;
+      const refererScreen = normalizeScreenName(refererPath);
+      if (refererScreen) {
+        return refererScreen;
+      }
+    } catch (error) {
+      // Ignore malformed referer values and fall through to the default.
+    }
+  }
+
+  return 'cinema';
+}
+
+async function getScreenPlayerSettingsWithFallback(screen) {
+  const normalizedScreen = normalizeScreenName(screen) || 'cinema';
+  const primarySettings = await getScreenPlayerSettings(normalizedScreen);
+  if (primarySettings) {
+    return primarySettings;
+  }
+
+  if (normalizedScreen !== 'cinema') {
+    const cinemaSettings = await getScreenPlayerSettings('cinema');
+    if (cinemaSettings) {
+      return cinemaSettings;
+    }
+  }
+
+  return {
+    screen: 'cinema',
+    ...SCREEN_PLAYER_SETTING_DEFAULTS,
+  };
 }
 
 exports.playlist = async (req, res, next) => {
@@ -83,7 +128,9 @@ exports.playerSettings = async (req, res, next) => {
 
 exports.cinemaMovies = async (req, res, next) => {
   try {
-    const [movies, showtimes, playerSettings] = await Promise.all([
+    const screen = resolveScreenFromRequest(req);
+
+    const [movies, showtimes, sharedSettings, screenSettings] = await Promise.all([
       all(
         `SELECT id, title, poster_url, local_poster_path, status, synopsis, release_date, runtime, genre
          FROM movies
@@ -104,7 +151,15 @@ exports.cinemaMovies = async (req, res, next) => {
          ORDER BY show_date ASC, show_time ASC`
       ),
       getPlayerSettings(),
+      getScreenPlayerSettingsWithFallback(screen),
     ]);
+
+    console.log('[api/cinema-movies] screen=%s', screen);
+    const playerSettings = {
+      ...sharedSettings,
+      ...screenSettings,
+      screen: screenSettings.screen || screen,
+    };
 
     const groupedShowtimes = new Map();
 

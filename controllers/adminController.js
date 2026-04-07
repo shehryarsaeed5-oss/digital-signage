@@ -12,6 +12,8 @@ const {
 } = require('../services/movieSyncService');
 const {
   getPlayerSettings,
+  SCREEN_PLAYER_SETTING_DEFAULTS,
+  getScreenPlayerSettings,
   upsertPlayerSettings,
   upsertScreenPlayerSettings,
   normalizeScreenName,
@@ -529,11 +531,23 @@ exports.toggleMoviePlaylistVisibility = async (req, res, next) => {
 
 exports.playerSettingsPage = async (req, res, next) => {
   try {
-    const settings = await getPlayerSettings();
+    const screenOrder = ['cinema', 'cinema-3x2', 'cinema-portrait'];
+    const screenSettings = Object.fromEntries(await Promise.all(
+      screenOrder.map(async (screen) => {
+        const settings = await getScreenPlayerSettings(screen);
+        return [
+          screen,
+          settings || {
+            screen,
+            ...SCREEN_PLAYER_SETTING_DEFAULTS,
+          },
+        ];
+      })
+    ));
     const flash = consumeFlash(req);
 
     res.render('admin/player-settings', {
-      settings,
+      screenSettings,
       success: flash.success,
       error: flash.error,
     });
@@ -545,7 +559,20 @@ exports.playerSettingsPage = async (req, res, next) => {
 exports.savePlayerSettings = async (req, res, next) => {
   try {
     const wantsJson = String(req.get('accept') || '').includes('application/json');
+    const hasScreenField = Object.prototype.hasOwnProperty.call(req.body, 'screen');
     const selectedScreen = normalizeScreenName(req.body.screen);
+
+    if (hasScreenField && !selectedScreen) {
+      const errorMessage = 'Invalid screen selected.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
+      res.redirect('/admin/player-settings');
+      return;
+    }
 
     if (selectedScreen) {
       const nowShowingDuration = Number.parseInt(req.body.now_showing_duration_seconds, 10);
@@ -985,7 +1012,7 @@ exports.compressAdForSignage = async (req, res, next) => {
     }
 
     if (ad.type !== 'video' || path.extname(ad.file_path || '').toLowerCase() !== '.mp4') {
-      req.session.flashError = 'Only MP4 video ads can be compressed for signage.';
+      req.session.flashError = 'Only MP4 video ads can be compressed for player playback.';
       req.session.flashMessage = '';
       res.redirect('/admin/ads');
       return;

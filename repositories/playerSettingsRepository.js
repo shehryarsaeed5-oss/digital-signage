@@ -37,12 +37,11 @@ const SCREEN_PLAYER_SETTING_DEFAULTS = Object.freeze({
   ad_frequency_movies: 2,
 });
 
-const SCREEN_PLAYER_SETTING_ORDER = ['signage', 'cinema', 'cinema-portrait', 'cinema-3x2'];
+const SCREEN_PLAYER_SETTING_ORDER = ['cinema', 'cinema-3x2', 'cinema-portrait'];
 const SCREEN_PLAYER_SETTING_LABELS = Object.freeze({
-  signage: 'Signage Player',
   cinema: 'Cinema Player',
+  'cinema-3x2': 'Cinema Player 3x2',
   'cinema-portrait': 'Cinema Portrait Player',
-  'cinema-3x2': 'Cinema 3x2 Player',
 });
 
 const LEGACY_SETTING_KEYS = {
@@ -62,10 +61,6 @@ function normalizeScreenName(screen) {
     .replace(/player$/, '')
     .replace(/-+/g, '-')
     .replace(/^-|-$/g, '');
-
-  if (normalized === 'signage' || normalized === 'signage-player') {
-    return 'signage';
-  }
 
   if (normalized === 'cinema' || normalized === 'cinema-player') {
     return 'cinema';
@@ -182,11 +177,11 @@ async function listScreenPlayerSettings() {
   const rows = await all(
     `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, updated_at
      FROM screen_player_settings
+     WHERE screen IN ('cinema', 'cinema-portrait', 'cinema-3x2')
      ORDER BY CASE screen
-       WHEN 'signage' THEN 1
-       WHEN 'cinema' THEN 2
+       WHEN 'cinema' THEN 1
+       WHEN 'cinema-3x2' THEN 2
        WHEN 'cinema-portrait' THEN 3
-       WHEN 'cinema-3x2' THEN 4
        ELSE 99
      END, screen ASC`
   );

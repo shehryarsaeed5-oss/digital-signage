@@ -893,7 +893,8 @@ function updateClock() {
 
 async function fetchCinemaMovies() {
   try {
-    const moviesResponse = await fetch('/api/cinema-movies', { cache: 'no-store' });
+    const screen = detectPlayerScreen();
+    const moviesResponse = await fetch(`/api/cinema-movies?screen=${screen}`, { cache: 'no-store' });
 
     const result = await moviesResponse.json();
     const data = result.data || {};
@@ -903,7 +904,6 @@ async function fetchCinemaMovies() {
     applyPlayerSettings(data.playerSettings);
     let ads = [];
     if (isAdsEnabledForScreen(data.playerSettings)) {
-      const screen = detectPlayerScreen();
       console.log('Player screen:', screen);
       const adsResponse = await fetch(`/api/ads?screen=${screen}`, { cache: 'no-store' });
       ads = adsResponse.ok ? normalizeAds(await adsResponse.json()) : [];

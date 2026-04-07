@@ -1,9 +1,8 @@
 (() => {
   const screenOptions = {
-    signage: 'Signage Player',
     cinema: 'Cinema Player',
+    'cinema-3x2': 'Cinema Player 3x2',
     'cinema-portrait': 'Cinema Portrait Player',
-    'cinema-3x2': 'Cinema 3x2 Player',
   };
 
   const normalizeScreenId = (screen) => {
@@ -11,7 +10,6 @@
     if (!value) return '';
     if (value === 'portrait') return 'cinema-portrait';
     if (value === '3x2') return 'cinema-3x2';
-    if (value === 'signage-player') return 'signage';
     if (value === 'cinema-player') return 'cinema';
     return value;
   };
@@ -148,17 +146,19 @@
 
       const payload = await response.json();
       const data = payload?.data || {};
-      savedSettings = Array.isArray(data.settings) ? data.settings.map(normalizeRecord) : [];
+      savedSettings = Array.isArray(data.settings)
+        ? data.settings.map(normalizeRecord).filter((record) => record.screen && screenOptions[record.screen])
+        : [];
       savedSettingsMap = new Map(savedSettings.map((record) => [record.screen, record]));
       renderTable();
-      applySettingsToForm(screenSelect.value || 'signage');
+      applySettingsToForm(screenSelect.value || 'cinema');
     } catch (error) {
       console.error('Failed to load screen settings', error);
       setError('Unable to load saved screen settings.');
       savedSettings = [];
       savedSettingsMap = new Map();
       renderTable();
-      applySettingsToForm(screenSelect.value || 'signage');
+      applySettingsToForm(screenSelect.value || 'cinema');
     } finally {
       setLoading(false);
     }
@@ -185,7 +185,7 @@
       const record = rawSetting ? normalizeRecord(rawSetting) : null;
 
       screenSelect.value = screen;
-      applySettingsToForm(screen, record || { screen, ...defaults });
+      applySettingsToForm(screen, (record && record.screen) ? record : { screen, ...defaults });
       (screenCard || form).scrollIntoView({ behavior: 'smooth', block: 'start' });
     } catch (error) {
       console.error('Failed to load screen settings for edit', error);
@@ -293,12 +293,12 @@
 
   if (resetButton) {
     resetButton.addEventListener('click', () => {
-      applySettingsToForm(screenSelect.value || 'signage');
+      applySettingsToForm(screenSelect.value || 'cinema');
       setError('');
     });
   }
 
   form.addEventListener('submit', handleSubmit);
-  applySettingsToForm(screenSelect.value || 'signage');
+  applySettingsToForm(screenSelect.value || 'cinema');
   void loadSavedSettings();
 })();

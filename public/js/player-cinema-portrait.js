@@ -6,6 +6,16 @@ const MAX_VISIBLE_SHOWTIMES = 4;
 
 const state = {
   items: [],
+  moviePlaylistItems: [],
+  adItems: [],
+  combinedPlaylist: [],
+  playerSettings: {
+    now_showing_duration_seconds: 8,
+    coming_soon_duration_seconds: 5,
+    enable_ads: true,
+    ad_frequency_movies: 2,
+  },
+  failedAdKeys: new Set(),
   activeIndex: 0,
   visibleSlot: 0,
   rotationTimer: null,
@@ -231,6 +241,124 @@ function normalizeMovies(data) {
   return [...nowShowing, ...comingSoon];
 }
 
+function normalizeAds(data) {
+  return (Array.isArray(data) ? data : [])
+    .filter((ad) => ad && ad.file && (ad.type === 'image' || ad.type === 'video'))
+    .map((ad) => ({
+      id: ad.id,
+      title: ad.title || 'Untitled Ad',
+      file: ad.file,
+      type: ad.type,
+      duration: Number.isFinite(Number(ad.duration)) ? Number(ad.duration) : null,
+      screenTargets: Array.isArray(ad.screenTargets)
+        ? ad.screenTargets
+        : (Array.isArray(ad.screen_targets) ? ad.screen_targets : []),
+      playlistType: 'ad',
+    }));
+}
+
+function isAdsEnabledForScreen(settings) {
+  return settings?.enable_ads !== false;
+}
+
+function normalizeScreenLabel(label) {
+  const text = String(label || '').toLowerCase().trim();
+  if (!text) return '';
+  if (text.includes('3x2')) return 'cinema-3x2';
+  if (text.includes('portrait')) return 'cinema-portrait';
+  if (text.includes('cinema')) return 'cinema';
+  return text;
+}
+
+function detectPlayerScreen() {
+  let path = String(window.location?.pathname || '').toLowerCase();
+  if (path.length > 1 && path.endsWith('/')) {
+    path = path.slice(0, -1);
+  }
+
+  if (path === '/player/cinema-portrait') return 'cinema-portrait';
+  if (path === '/player/cinema-3x2') return 'cinema-3x2';
+  if (path === '/player/cinema') return 'cinema';
+  return 'cinema-portrait';
+}
+
+function getAdKey(adItem) {
+  return `${adItem?.id || 'unknown'}:${adItem?.file || ''}:${adItem?.type || ''}`;
+}
+
+function getPlayableAds(adItems) {
+  return (Array.isArray(adItems) ? adItems : []).filter((adItem) => !state.failedAdKeys.has(getAdKey(adItem)));
+}
+
+function buildCombinedPlaylist(movieItems, adItems, playerSettings) {
+  const movies = Array.isArray(movieItems) ? movieItems : [];
+  const ads = Array.isArray(adItems) ? adItems : [];
+  const enableAds = playerSettings?.enable_ads !== false;
+  const frequency = Number.isFinite(Number(playerSettings?.ad_frequency_movies))
+    ? Math.min(10, Math.max(1, Number(playerSettings.ad_frequency_movies)))
+    : 2;
+
+  if (!enableAds || ads.length === 0 || movies.length === 0) {
+    return [...movies];
+  }
+
+  const combined = [];
+  let adIndex = 0;
+
+  for (let movieIndex = 0; movieIndex < movies.length; movieIndex += 1) {
+    combined.push(movies[movieIndex]);
+
+    if ((movieIndex + 1) % frequency === 0) {
+      combined.push({
+        ...ads[adIndex % ads.length],
+        playlistIndex: combined.length,
+      });
+      adIndex += 1;
+    }
+  }
+
+  return combined;
+}
+
+function getAdPlaylistItemDurationSeconds(adItem) {
+  return Math.max(1, Number(adItem?.duration) || 10);
+}
+
+function getPlaylistItemDurationSeconds(item) {
+  if (item?.playlistType === 'ad') {
+    return getAdPlaylistItemDurationSeconds(item);
+  }
+
+  return item?.isComingSoon
+    ? Math.max(1, state.playerSettings.coming_soon_duration_seconds)
+    : Math.max(1, state.playerSettings.now_showing_duration_seconds);
+}
+
+function rebuildCombinedPlaylist() {
+  const previousItem = state.combinedPlaylist[state.activeIndex];
+  const previousIndex = state.activeIndex;
+  state.combinedPlaylist = buildCombinedPlaylist(
+    state.moviePlaylistItems,
+    getPlayableAds(state.adItems),
+    state.playerSettings
+  );
+
+  if (!previousItem) {
+    state.activeIndex = 0;
+    return;
+  }
+
+  const matchedIndex = state.combinedPlaylist.findIndex((item) =>
+    item.playlistType === previousItem?.playlistType &&
+    item.id === previousItem?.id &&
+    item.title === previousItem?.title
+  );
+
+  state.activeIndex = matchedIndex >= 0
+    ? matchedIndex
+    : Math.max(-1, Math.min(previousIndex - 1, state.combinedPlaylist.length - 1));
+}
+
 function showEmptyState() {
   emptyNode.classList.remove('hidden');
   slideNodes.forEach((slot) => {
@@ -244,15 +372,43 @@ function hideEmptyState() {
 }
 
 function renderPoster(node, item) {
-  if (!item.posterUrl) {
+  if (item?.playlistType === 'ad' && item?.type === 'video') {
+    node.innerHTML = `
+      <video
+        class="portrait-poster-video"
+        src="${escapeHtml(item.file)}"
+        autoplay
+        muted
+        playsinline
+        loop
+      ></video>
+    `;
+    return;
+  }
+
+  const posterUrl = item?.playlistType === 'ad' ? item?.file : item?.posterUrl;
+  if (!posterUrl) {
     node.innerHTML = '<div class="portrait-poster-fallback">Poster unavailable</div>';
     return;
   }
 
-  node.innerHTML = `<img class="portrait-poster-image" src="${escapeHtml(item.posterUrl)}" alt="${escapeHtml(item.title)} poster">`;
+  const altText = item?.playlistType === 'ad'
+    ? `${escapeHtml(item.title)} ad`
+    : `${escapeHtml(item.title)} poster`;
+  node.innerHTML = `<img class="portrait-poster-image" src="${escapeHtml(posterUrl)}" alt="${altText}">`;
 }
 
 function renderStatus(node, item) {
+  if (item?.playlistType === 'ad') {
+    node.innerHTML = `
+      <div class="portrait-status-content">
+        <span class="portrait-status-line">AD</span>
+        <span class="portrait-status-line">PLAYBACK</span>
+      </div>
+    `;
+    return;
+  }
+
   const line1 = item.isComingSoon ? 'COMING' : 'NOW';
   const line2 = item.isComingSoon ? 'SOON' : 'SHOWING';
 
@@ -265,6 +421,12 @@ function renderStatus(node, item) {
 }
 
 function renderShowtimes(node, item) {
+  if (item?.playlistType === 'ad') {
+    node.innerHTML = '';
+    node.classList.add('hidden');
+    return;
+  }
+
   const showtimes = Array.isArray(item.showtimes) ? item.showtimes.slice(0, MAX_VISIBLE_SHOWTIMES) : [];
 
   if (item.isComingSoon || showtimes.length === 0) {
@@ -334,7 +496,7 @@ function startRotation() {
   state.rotationTimer = window.setTimeout(() => {
     showItem(state.activeIndex + 1);
     startRotation();
-  }, ROTATION_INTERVAL_MS);
+  }, Math.max(1, getPlaylistItemDurationSeconds(state.items[state.activeIndex])) * 1000);
 }
 
 function applyItems(items) {
@@ -363,6 +525,21 @@ function applyItems(items) {
   startRotation();
 }
 
+function applyPlayerSettings(settings) {
+  state.playerSettings = {
+    now_showing_duration_seconds: Number.isFinite(Number(settings?.now_showing_duration_seconds))
+      ? Number(settings.now_showing_duration_seconds)
+      : 8,
+    coming_soon_duration_seconds: Number.isFinite(Number(settings?.coming_soon_duration_seconds))
+      ? Number(settings.coming_soon_duration_seconds)
+      : 5,
+    enable_ads: settings?.enable_ads !== false,
+    ad_frequency_movies: Number.isFinite(Number(settings?.ad_frequency_movies))
+      ? Math.min(10, Math.max(1, Number(settings.ad_frequency_movies)))
+      : 2,
+  };
+}
+
 function applyAppearanceSettings(settings) {
   if (!settings) return;
 
@@ -387,7 +564,8 @@ function applyAppearanceSettings(settings) {
 
 async function fetchMovies() {
   try {
-    const response = await fetch('/api/cinema-movies', { cache: 'no-store' });
+    const screen = detectPlayerScreen();
+    const response = await fetch(`/api/cinema-movies?screen=${screen}`, { cache: 'no-store' });
     if (!response.ok) {
       throw new Error(`HTTP ${response.status}`);
     }
@@ -396,7 +574,21 @@ async function fetchMovies() {
     const data = payload.data || {};
     
     applyAppearanceSettings(data.playerSettings);
-    applyItems(normalizeMovies(data));
+
+    const nowShowing = Array.isArray(data.nowShowing) ? data.nowShowing : [];
+    const comingSoon = Array.isArray(data.comingSoon) ? data.comingSoon : [];
+    state.moviePlaylistItems = normalizeMovies({ nowShowing, comingSoon });
+    applyPlayerSettings(data.playerSettings);
+
+    let ads = [];
+    if (isAdsEnabledForScreen(data.playerSettings)) {
+      const adsResponse = await fetch(`/api/ads?screen=${screen}`, { cache: 'no-store' });
+      ads = adsResponse.ok ? normalizeAds(await adsResponse.json()) : [];
+    }
+
+    state.adItems = ads;
+    rebuildCombinedPlaylist();
+    applyItems(state.combinedPlaylist);
   } catch (error) {
     console.error('Failed to load movies', error);
     if (!state.initialized || state.items.length === 0) {
