@@ -574,52 +574,14 @@ exports.savePlayerSettings = async (req, res, next) => {
       return;
     }
 
-    if (selectedScreen) {
-      const nowShowingDuration = Number.parseInt(req.body.now_showing_duration_seconds, 10);
-      const comingSoonDuration = Number.parseInt(req.body.coming_soon_duration_seconds, 10);
-      const adFrequencyMovies = Number.parseInt(req.body.ad_frequency_movies, 10);
-      const isEnabled = req.body.enable_ads === 'on' || req.body.enable_ads === 'true' || req.body.enable_ads === '1';
-      const isValidDuration = (value) => Number.isFinite(value) && value >= 1 && value <= 60;
-      const isValidAdFrequency = Number.isFinite(adFrequencyMovies) && adFrequencyMovies >= 1 && adFrequencyMovies <= 10;
-
-      if (!isValidDuration(nowShowingDuration) || !isValidDuration(comingSoonDuration)) {
-        const errorMessage = 'Durations must be whole seconds between 1 and 60.';
-        if (wantsJson) {
-          res.status(400).json({ error: errorMessage });
-          return;
-        }
-        req.session.flashError = errorMessage;
-        req.session.flashMessage = '';
-        res.redirect('/admin/player-settings');
-        return;
-      }
-
-      if (!isValidAdFrequency) {
-        const errorMessage = 'Ad frequency must be a whole number between 1 and 10.';
-        if (wantsJson) {
-          res.status(400).json({ error: errorMessage });
-          return;
-        }
-        req.session.flashError = errorMessage;
-        req.session.flashMessage = '';
-        res.redirect('/admin/player-settings');
-        return;
-      }
-
-      const updatedSettings = await upsertScreenPlayerSettings(selectedScreen, {
-        now_showing_duration_seconds: nowShowingDuration,
-        coming_soon_duration_seconds: comingSoonDuration,
-        enable_ads: isEnabled,
-        ad_frequency_movies: adFrequencyMovies,
-      });
-
+    if (!selectedScreen) {
+      const errorMessage = 'Invalid screen selected.';
       if (wantsJson) {
-        res.json({ data: updatedSettings });
+        res.status(400).json({ error: errorMessage });
         return;
       }
-
-      req.session.flashMessage = 'Screen settings saved.';
-      req.session.flashError = '';
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
       res.redirect('/admin/player-settings');
       return;
     }
@@ -627,56 +589,47 @@ exports.savePlayerSettings = async (req, res, next) => {
     const nowShowingDuration = Number.parseInt(req.body.now_showing_duration_seconds, 10);
     const comingSoonDuration = Number.parseInt(req.body.coming_soon_duration_seconds, 10);
     const adFrequencyMovies = Number.parseInt(req.body.ad_frequency_movies, 10);
-    const enableAds = req.body.enable_ads === 'on';
+    const isEnabled = req.body.enable_ads === 'on' || req.body.enable_ads === 'true' || req.body.enable_ads === '1';
     const isValidDuration = (value) => Number.isFinite(value) && value >= 1 && value <= 60;
     const isValidAdFrequency = Number.isFinite(adFrequencyMovies) && adFrequencyMovies >= 1 && adFrequencyMovies <= 10;
 
     if (!isValidDuration(nowShowingDuration) || !isValidDuration(comingSoonDuration)) {
-      req.session.flashError = 'Durations must be whole seconds between 1 and 60.';
+      const errorMessage = 'Durations must be whole seconds between 1 and 60.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
       req.session.flashMessage = '';
       res.redirect('/admin/player-settings');
       return;
     }
 
     if (!isValidAdFrequency) {
-      req.session.flashError = 'Ad frequency must be a whole number between 1 and 10.';
+      const errorMessage = 'Ad frequency must be a whole number between 1 and 10.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
       req.session.flashMessage = '';
       res.redirect('/admin/player-settings');
       return;
     }
 
-    const settings = {
+    const updatedSettings = await upsertScreenPlayerSettings(selectedScreen, {
       now_showing_duration_seconds: nowShowingDuration,
       coming_soon_duration_seconds: comingSoonDuration,
-      enable_ads: enableAds,
+      enable_ads: isEnabled,
       ad_frequency_movies: adFrequencyMovies,
-      player_ads_enabled: req.body.player_ads_enabled === 'on',
-      cinema_ads_enabled: req.body.cinema_ads_enabled === 'on',
-      cinema_portrait_ads_enabled: req.body.cinema_portrait_ads_enabled === 'on',
-      cinema_3x2_ads_enabled: req.body.cinema_3x2_ads_enabled === 'on',
-    };
+    });
 
-    // Safely parse portrait appearance settings if present in body
-    for (const key of PORTRAIT_APPEARANCE_KEYS) {
-      if (req.body[key] !== undefined && req.body[key] !== '') {
-        const value = Number.parseFloat(req.body[key]);
-        if (Number.isFinite(value) && value >= 0 && value <= 100) {
-          settings[key] = value;
-        }
-      }
+    if (wantsJson) {
+      res.json({ data: updatedSettings });
+      return;
     }
 
-    for (const key of CINEMA_WALL_APPEARANCE_KEYS) {
-      if (req.body[key] !== undefined && req.body[key] !== '') {
-        const value = Number.parseFloat(req.body[key]);
-        if (Number.isFinite(value) && value >= 0 && value <= 500) {
-          settings[key] = value;
-        }
-      }
-    }
-
-    await upsertPlayerSettings(settings);
-    req.session.flashMessage = 'Player settings saved.';
+    req.session.flashMessage = 'Screen settings saved.';
     req.session.flashError = '';
     res.redirect('/admin/player-settings');
   } catch (error) {

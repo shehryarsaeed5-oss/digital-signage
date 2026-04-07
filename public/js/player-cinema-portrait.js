@@ -451,6 +451,9 @@ function renderShowtimes(node, item) {
 
 function renderSlide(slot, item) {
   const isAd = item?.playlistType === 'ad';
+  if (slot.root) {
+    slot.root.classList.toggle('is-ad-mode', isAd);
+  }
   if (slot.footer) {
     slot.footer.classList.toggle('is-ad-mode', isAd);
     slot.footer.hidden = isAd;
