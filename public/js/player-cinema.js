@@ -349,7 +349,6 @@ function applyPlayerSettings(settings) {
     ['cinema_wall_showtime_font_rem', '--cinema-wall-showtime-size', 'rem', 1.6],
     ['cinema_wall_status_font_rem', '--cinema-wall-status-size', 'rem', 1.2],
     ['cinema_wall_card_padding_px', '--cinema-wall-card-padding', 'px', 40],
-    ['cinema_wall_poster_width_percent', '--cinema-wall-poster-width', '%', 38],
     ['cinema_wall_radius_px', '--cinema-wall-radius', 'px', 0],
     ['cinema_wall_header_gap_px', '--cinema-wall-header-gap', 'px', 16],
     ['cinema_wall_content_scale', '--cinema-wall-content-scale', '', 1],
@@ -360,6 +359,12 @@ function applyPlayerSettings(settings) {
     const value = Number.isFinite(numericValue) ? numericValue : fallback;
     root.style.setProperty(cssVar, `${value}${unit}`);
   });
+
+  const posterWidthValue = Number(settings?.poster_width_percent ?? settings?.cinema_wall_poster_width_percent);
+  root.style.setProperty(
+    '--cinema-wall-poster-width',
+    `${Number.isFinite(posterWidthValue) ? posterWidthValue : 38}%`
+  );
 }
 
 function normalizeAds(data) {

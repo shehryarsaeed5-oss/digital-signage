@@ -6,6 +6,7 @@
   */
   --wall-gap: 30px;
   --wall-padding: 30px;
+  --cinema-3x2-poster-width: 40%;
 }
 
 html,
@@ -72,31 +73,34 @@ body {
 }
 
 .cinema-poster-shell-main {
-  flex: 0 0 40%;
-  width: 40%;
-  min-width: 0;      /* changed from 34% */
-  max-width: 80%;    /* changed from 44% */
-  height: 100%;
+  flex: 0 0 var(--cinema-3x2-poster-width);
+  width: var(--cinema-3x2-poster-width);
+  min-width: 0;
+  max-width: 80%;
+  height: auto;
+  aspect-ratio: 27 / 40;
+  align-self: center;
   background: #000;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 0;        /* changed from 16px */
+  padding: 0;
   box-sizing: border-box;
 }
 
 .cinema-poster {
-  width: 80%;        /* changed from 150px */
-  height: auto;      /* changed from 220px */
-  max-height: 80%;   /* new line */
-  object-fit: contain;
+  width: 100%;
+  height: 100%;
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: cover;
   object-position: center center;
   display: block;
 }
 
 .cinema-poster-fallback {
-  width: 150px;
-  height: 220px;
+  width: 100%;
+  height: 100%;
   max-width: 100%;
   max-height: 100%;
   display: flex;
@@ -107,32 +111,9 @@ body {
   padding: 12px;
 }
 
-@media (max-width: 1800px) {
-  .cinema-poster-shell-main {
-    flex-basis: 42%;
-    width: 42%;
-    max-width: 46%;
-  }
-
-  .cinema-poster,
-  .cinema-poster-fallback {
-    width: 140px;
-    height: 205px;
-  }
-}
-
 @media (max-width: 1200px) {
   .cinema-poster-shell-main {
-    flex-basis: 44%;
-    width: 44%;
-    max-width: 48%;
     padding: 12px;
-  }
-
-  .cinema-poster,
-  .cinema-poster-fallback {
-    width: 128px;
-    height: 188px;
   }
 }
 

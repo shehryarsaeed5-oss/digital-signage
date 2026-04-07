@@ -589,9 +589,14 @@ exports.savePlayerSettings = async (req, res, next) => {
     const nowShowingDuration = Number.parseInt(req.body.now_showing_duration_seconds, 10);
     const comingSoonDuration = Number.parseInt(req.body.coming_soon_duration_seconds, 10);
     const adFrequencyMovies = Number.parseInt(req.body.ad_frequency_movies, 10);
+    const hasPosterWidthField = Object.prototype.hasOwnProperty.call(req.body, 'poster_width_percent');
+    const posterWidthPercent = hasPosterWidthField
+      ? Number.parseInt(req.body.poster_width_percent, 10)
+      : SCREEN_PLAYER_SETTING_DEFAULTS.poster_width_percent;
     const isEnabled = req.body.enable_ads === 'on' || req.body.enable_ads === 'true' || req.body.enable_ads === '1';
     const isValidDuration = (value) => Number.isFinite(value) && value >= 1 && value <= 60;
     const isValidAdFrequency = Number.isFinite(adFrequencyMovies) && adFrequencyMovies >= 1 && adFrequencyMovies <= 10;
+    const isValidPosterWidth = Number.isFinite(posterWidthPercent) && posterWidthPercent >= 20 && posterWidthPercent <= 70;
 
     if (!isValidDuration(nowShowingDuration) || !isValidDuration(comingSoonDuration)) {
       const errorMessage = 'Durations must be whole seconds between 1 and 60.';
@@ -617,11 +622,24 @@ exports.savePlayerSettings = async (req, res, next) => {
       return;
     }
 
+    if (hasPosterWidthField && !isValidPosterWidth) {
+      const errorMessage = 'Poster width must be a whole number between 20 and 70.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
+      res.redirect('/admin/player-settings');
+      return;
+    }
+
     const updatedSettings = await upsertScreenPlayerSettings(selectedScreen, {
       now_showing_duration_seconds: nowShowingDuration,
       coming_soon_duration_seconds: comingSoonDuration,
       enable_ads: isEnabled,
       ad_frequency_movies: adFrequencyMovies,
+      poster_width_percent: posterWidthPercent,
     });
 
     if (wantsJson) {

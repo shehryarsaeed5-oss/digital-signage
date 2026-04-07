@@ -306,6 +306,13 @@ function applyPlayerSettings(settings) {
       ? Math.min(10, Math.max(1, Number(settings.ad_frequency_movies)))
       : 2,
   };
+
+  const root = document.documentElement;
+  const posterWidthValue = Number(settings?.poster_width_percent ?? settings?.cinema_wall_poster_width_percent);
+  root.style.setProperty(
+    '--cinema-3x2-poster-width',
+    `${Number.isFinite(posterWidthValue) ? posterWidthValue : 40}%`
+  );
 }
 
 function normalizeAds(data) {
