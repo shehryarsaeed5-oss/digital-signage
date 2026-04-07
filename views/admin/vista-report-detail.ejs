@@ -1,0 +1,42 @@
+<%- include('partials/layout-start', { pageTitle: 'VISTA Report' }) %>
+<link rel="stylesheet" href="/css/vista-report.css">
+
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>VISTA Report</h1>
+    <p class="muted">Saved report details and print-ready playback summary.</p>
+  </div>
+  <div class="page-header-actions no-print">
+    <a class="secondary-link" href="/admin/vista-report">Back to VISTA Report</a>
+    <a class="secondary-link" href="/admin/vista-report/history">View Saved Reports</a>
+    <% if (reportView && reportView.printUrl) { %>
+      <a class="secondary-link" href="<%= reportView.printUrl %>" target="_blank" rel="noreferrer">Print PDF</a>
+    <% } %>
+  </div>
+</header>
+
+<main class="admin-grid vista-report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <% if (reportView) { %>
+    <%- include('partials/vista-report-result', {
+      reportView,
+      showActions: false,
+    }) %>
+  <% } else if (!error) { %>
+    <section class="panel panel-wide">
+      <p class="empty-state">Report data is unavailable.</p>
+    </section>
+  <% } %>
+</main>
+
+<%- include('partials/layout-end') %>

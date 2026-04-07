@@ -215,12 +215,20 @@ exports.cinemaMovies = async (req, res, next) => {
 
 exports.ads = async (req, res, next) => {
   try {
+    console.log('API received screen:', req.query.screen);
     const { screen } = req.query;
     const ads = await listAds({
       status: req.query.status || 'active',
-      screen,
+      screen: req.query.screen,
       createdAtOrder: 'ASC',
     });
+
+    console.log('Ads returned:', ads.map((ad) => ({
+      id: ad.id,
+      title: ad.title,
+      screen_targets: ad.screen_targets,
+      status: ad.status,
+    })));
 
     res.json(
       ads.map((ad) => ({

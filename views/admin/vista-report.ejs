@@ -1,0 +1,119 @@
+<%- include('partials/layout-start', { pageTitle: 'VISTA Report' }) %>
+<link rel="stylesheet" href="/css/vista-report.css">
+
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>VISTA Report</h1>
+    <p class="muted">Create daily and weekly playback reports without leaving the admin shell.</p>
+  </div>
+  <div class="page-header-actions">
+    <a class="secondary-link" href="#daily-report">New Daily Report</a>
+    <a class="secondary-link" href="#weekly-report">New Weekly Report</a>
+    <a class="secondary-link" href="/admin/vista-report/history">View Saved Reports</a>
+  </div>
+</header>
+
+<main class="admin-grid vista-report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <section class="panel panel-wide vista-report-panel" id="daily-report">
+    <div class="panel-heading">
+      <div>
+        <p class="dashboard-kicker">Daily Report</p>
+        <h2>Generate a daily playback report</h2>
+        <p class="muted">Enter the daily inputs, calculate the report, then save or print the result.</p>
+      </div>
+    </div>
+
+    <form method="post" action="/admin/vista-report/daily/calculate" class="stack vista-report-form no-print">
+      <%- include('partials/vista-report-day-section', {
+        prefix: 'daily',
+        sectionTitle: 'Daily Report Inputs',
+        sectionSubtitle: 'Fill in the report date, site name, and the playlist inputs for the day.',
+        values: dailyForm,
+        showMetaFields: true,
+        dayKey: '',
+        visibleAdRows: 3,
+      }) %>
+
+      <div class="form-actions">
+        <button type="submit" class="secondary">Generate Report</button>
+        <button type="submit" formaction="/admin/vista-report/daily/save">Save Report</button>
+      </div>
+    </form>
+
+    <% if (dailyResult) { %>
+      <div class="vista-report-result-wrap">
+        <%- include('partials/vista-report-result', {
+          reportView: dailyResult,
+          showActions: true,
+        }) %>
+      </div>
+    <% } %>
+  </section>
+
+  <section class="panel panel-wide vista-report-panel" id="weekly-report">
+    <div class="panel-heading">
+      <div>
+        <p class="dashboard-kicker">Weekly Report</p>
+        <h2>Generate a weekly playback report</h2>
+        <p class="muted">Set the week start date, then enter the seven daily rows from Monday through Sunday.</p>
+      </div>
+    </div>
+
+    <form method="post" action="/admin/vista-report/weekly/calculate" class="stack vista-report-form no-print">
+      <div class="vista-report-grid">
+        <label>
+          <span>Week Start Date</span>
+          <input type="date" name="weekly[week_start_date]" value="<%= weeklyForm.week_start_date || '' %>" required>
+        </label>
+        <label>
+          <span>Site / Screen Name</span>
+          <input type="text" name="weekly[site_name]" value="<%= weeklyForm.site_name || '' %>" placeholder="Cinema wall or site name" required>
+        </label>
+      </div>
+
+      <% DAY_KEYS.forEach((dayKey) => { %>
+        <%
+          const dayPrefix = `weekly[days][${dayKey}]`;
+          const dayValues = (weeklyForm.days && weeklyForm.days[dayKey]) || {};
+        %>
+        <%- include('partials/vista-report-day-section', {
+          prefix: dayPrefix,
+          sectionTitle: DAY_LABELS[dayKey],
+          sectionSubtitle: 'Daily inputs for this day of the week.',
+          values: dayValues,
+          showMetaFields: false,
+          dayKey,
+          visibleAdRows: 2,
+        }) %>
+      <% }); %>
+
+      <div class="form-actions">
+        <button type="submit" class="secondary">Generate Weekly Report</button>
+        <button type="submit" formaction="/admin/vista-report/weekly/save">Save Weekly Report</button>
+      </div>
+    </form>
+
+    <% if (weeklyResult) { %>
+      <div class="vista-report-result-wrap">
+        <%- include('partials/vista-report-result', {
+          reportView: weeklyResult,
+          showActions: true,
+        }) %>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<script src="/js/admin-vista-report.js"></script>
+<%- include('partials/layout-end') %>

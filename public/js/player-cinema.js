@@ -456,24 +456,36 @@ function buildCombinedPlaylist(movieItems, adItems, playerSettings) {
     ? Math.min(10, Math.max(1, Number(playerSettings.ad_frequency_movies)))
     : 2;
 
+  let combined;
+
   if (!enableAds || ads.length === 0 || movies.length === 0) {
-    return [...movies];
-  }
+    combined = [...movies];
+  } else {
+    combined = [];
+    let adIndex = 0;
 
-  const combined = [];
-  let adIndex = 0;
+    for (let movieIndex = 0; movieIndex < movies.length; movieIndex += 1) {
+      combined.push(movies[movieIndex]);
 
-  for (let movieIndex = 0; movieIndex < movies.length; movieIndex += 1) {
-    combined.push(movies[movieIndex]);
-
-    if ((movieIndex + 1) % frequency === 0) {
-      combined.push({
-        ...ads[adIndex % ads.length],
-        playlistIndex: combined.length,
-      });
-      adIndex += 1;
+      if ((movieIndex + 1) % frequency === 0) {
+        combined.push({
+          ...ads[adIndex % ads.length],
+          playlistIndex: combined.length,
+        });
+        adIndex += 1;
+      }
     }
   }
+
+  console.log('[Cinema Debug] buildCombinedPlaylist input movie count:', movies.length);
+  console.log('[Cinema Debug] buildCombinedPlaylist input ad count:', ads.length);
+  console.log('[Cinema Debug] buildCombinedPlaylist final count:', combined.length);
+  console.log('[Cinema Debug] buildCombinedPlaylist final entries:', combined.map((item) => ({
+    title: item?.title || '',
+    type: item?.type || item?.itemType || item?.entityKind || '',
+    file_path: item?.file_path || item?.src || item?.thumbnailPath || '',
+    screen_targets: item?.screen_targets || item?.screenTargets || '',
+  })));
 
   return combined;
 }
@@ -953,15 +965,23 @@ async function fetchCinemaMovies() {
     applyPlayerSettings(data.playerSettings);
     let ads = [];
     if (isAdsEnabledForScreen(data.playerSettings)) {
-      console.log('Player screen:', screen);
-      const adsResponse = await fetch(`/api/ads?screen=${screen}`, { cache: 'no-store' });
+      console.log('Fetching ads for screen: cinema');
+      const adsResponse = await fetch('/api/ads?screen=cinema', { cache: 'no-store' });
       ads = adsResponse.ok ? normalizeAds(await adsResponse.json()) : [];
+      console.log('Cinema ads payload:', ads);
     }
 
     state.moviePlaylistItems = normalizeMoviePlaylistItems(nowShowing, comingSoon);
     state.adItems = ads;
     rebuildCombinedPlaylist();
     logCombinedPlaylist(state.combinedPlaylist, 'Cinema Landscape');
+    const playlistItems = state.combinedPlaylist;
+    console.log('Cinema final playlist:', playlistItems.map((item) => ({
+      title: item.title,
+      type: item.type || item.itemType || item.entityKind,
+      file_path: item.file_path || item.src || item.thumbnailPath || '',
+      status: item.status || '',
+    })));
 
     applyCinemaBoards(nowShowing, comingSoon);
     runCombinedPlaybackLoop();

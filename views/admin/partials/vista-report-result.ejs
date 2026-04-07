@@ -1,0 +1,95 @@
+<%
+  const view = reportView || {};
+  const rows = Array.isArray(view.tableRows) ? view.tableRows : [];
+  const isWeekly = view.tableVariant === 'weekly';
+  const showActions = typeof showActions === 'boolean' ? showActions : true;
+%>
+<section class="panel vista-report-result">
+  <div class="panel-heading">
+    <div>
+      <p class="dashboard-kicker"><%= view.reportType === 'weekly' ? 'Weekly Summary' : 'Daily Summary' %></p>
+      <h2><%= view.title || 'Report' %></h2>
+      <p class="muted"><%= view.subtitle || '' %></p>
+      <p class="muted vista-report-meta-line">
+        <strong>Site / Screen:</strong> <%= view.siteName || '—' %>
+        <% if (view.reportType === 'weekly') { %>
+          <span> · </span>
+          <strong>Week:</strong> <%= view.weekStartDate || '—' %> to <%= view.weekEndDate || '—' %>
+        <% } else { %>
+          <span> · </span>
+          <strong>Date:</strong> <%= view.reportDate || '—' %>
+        <% } %>
+        <span> · </span>
+        <strong>Generated:</strong> <%= view.generatedAt || '—' %>
+      </p>
+    </div>
+    <% if (showActions) { %>
+      <div class="vista-report-actions no-print">
+        <% if (view.printUrl) { %>
+          <a class="secondary-link" href="<%= view.printUrl %>" target="_blank" rel="noreferrer">Print PDF</a>
+        <% } else { %>
+          <button type="button" class="secondary" data-vista-print-button>Print PDF</button>
+        <% } %>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="vista-report-summary-grid">
+    <% (view.summaryCards || []).forEach((card) => { %>
+      <article class="vista-report-summary-card">
+        <span class="vista-report-summary-label"><%= card.label %></span>
+        <strong class="vista-report-summary-value"><%= card.value %></strong>
+      </article>
+    <% }); %>
+  </div>
+
+  <div class="vista-report-table-wrap">
+    <table class="vista-report-table">
+      <thead>
+        <tr>
+          <th scope="col">Item</th>
+          <% if (isWeekly) { %>
+            <th scope="col">Total Plays This Week</th>
+            <th scope="col">Avg Plays Per Day</th>
+            <th scope="col">Total Weekly Screen Time</th>
+          <% } else { %>
+            <th scope="col">Plays One Hour</th>
+            <th scope="col">Plays One Day</th>
+            <th scope="col">Total Screen Time</th>
+          <% } %>
+          <th scope="col">Readable Time</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% rows.forEach((row) => { %>
+          <tr>
+            <td><strong><%= row.itemLabel %></strong></td>
+            <% if (isWeekly) { %>
+              <td><%= row.totalPlaysThisWeek %></td>
+              <td><%= row.avgPlaysPerDay %></td>
+              <td><%= row.totalWeeklyScreenTimeSeconds %> sec</td>
+            <% } else { %>
+              <td><%= row.playsOneHour %></td>
+              <td><%= row.playsInPeriod %></td>
+              <td><%= row.totalScreenTimeSeconds %> sec</td>
+            <% } %>
+            <td><%= row.readableTime %></td>
+          </tr>
+        <% }); %>
+      </tbody>
+      <tfoot>
+        <tr>
+          <th scope="row">Total Runtime</th>
+          <% if (isWeekly) { %>
+            <td colspan="2"></td>
+            <td><%= view.totalRuntimeSeconds || 0 %> sec</td>
+          <% } else { %>
+            <td colspan="2"></td>
+            <td><%= view.totalRuntimeSeconds || 0 %> sec</td>
+          <% } %>
+          <td><%= view.totalRuntimeReadable || '0 sec' %></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+</section>

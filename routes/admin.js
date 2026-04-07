@@ -9,6 +9,7 @@ const {
 } = require('../config/adStorage');
 
 const adminController = require('../controllers/adminController');
+const vistaReportRoutes = require('./vistaReport');
 const { requireAuth } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -73,6 +74,7 @@ router.get('/ads/edit/:id', requireAuth, adminController.editAdPage);
 router.get('/movie-sync', requireAuth, adminController.movieSyncPage);
 router.get('/playlist', requireAuth, adminController.playlistPage);
 router.get('/player-settings', requireAuth, adminController.playerSettingsPage);
+router.use('/vista-report', requireAuth, vistaReportRoutes);
 router.get('/movie-sync/preview-now', requireAuth, adminController.previewNowShowing);
 router.get('/movie-sync/preview-coming', requireAuth, adminController.previewComingSoon);
 router.get('/movie-sync/preview-details', requireAuth, adminController.previewMovieDetails);

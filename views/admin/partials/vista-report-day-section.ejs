@@ -1,0 +1,103 @@
+<%
+  const sectionValues = values || {};
+  const adNames = Array.isArray(sectionValues.other_ads?.name) ? sectionValues.other_ads.name : [];
+  const adDurations = Array.isArray(sectionValues.other_ads?.duration) ? sectionValues.other_ads.duration : [];
+  const adPlays = Array.isArray(sectionValues.other_ads?.plays) ? sectionValues.other_ads.plays : [];
+  const rowsVisibleByDefault = Number.isFinite(Number(visibleAdRows)) ? Number(visibleAdRows) : 3;
+%>
+<section
+  class="vista-report-day-section"
+  data-vista-day-section
+  data-visible-ad-rows="<%= rowsVisibleByDefault %>"
+>
+  <div class="vista-report-day-header">
+    <div>
+      <h3><%= sectionTitle %></h3>
+      <% if (sectionSubtitle) { %>
+        <p class="muted"><%= sectionSubtitle %></p>
+      <% } %>
+    </div>
+    <% if (dayKey) { %>
+      <span class="vista-report-day-pill"><%= dayKey.toUpperCase() %></span>
+    <% } %>
+  </div>
+
+  <% if (showMetaFields) { %>
+    <div class="vista-report-grid">
+      <label>
+        <span>Report Date</span>
+        <input type="date" name="<%= prefix %>[report_date]" value="<%= sectionValues.report_date || '' %>" required>
+      </label>
+      <label>
+        <span>Site / Screen Name</span>
+        <input type="text" name="<%= prefix %>[site_name]" value="<%= sectionValues.site_name || '' %>" placeholder="Cinema wall or site name" required>
+      </label>
+    </div>
+  <% } %>
+
+  <div class="vista-report-grid">
+    <label>
+      <span>Screen ON Time (hours)</span>
+      <input type="number" name="<%= prefix %>[screen_on_time_hours]" min="0" step="0.1" value="<%= sectionValues.screen_on_time_hours || '' %>" required>
+    </label>
+    <label>
+      <span>Total Movie Posters Count</span>
+      <input type="number" name="<%= prefix %>[total_movie_posters_count]" min="0" step="1" value="<%= sectionValues.total_movie_posters_count || '' %>" required>
+    </label>
+    <label>
+      <span>Seconds per Movie Poster</span>
+      <input type="number" name="<%= prefix %>[seconds_per_movie_poster]" min="0" step="1" value="<%= sectionValues.seconds_per_movie_poster || '' %>" required>
+    </label>
+    <label>
+      <span>Elevate Repeat Count in 1 Playlist</span>
+      <input type="number" name="<%= prefix %>[elevate_repeat_count]" min="0" step="1" value="<%= sectionValues.elevate_repeat_count || '' %>" required>
+    </label>
+    <label>
+      <span>Seconds per Elevate Play</span>
+      <input type="number" name="<%= prefix %>[seconds_per_elevate_play]" min="0" step="1" value="<%= sectionValues.seconds_per_elevate_play || '' %>" required>
+    </label>
+  </div>
+
+  <div class="vista-report-ads-section">
+    <div class="vista-report-ads-header">
+      <div>
+        <h4>Other Ads / Clips</h4>
+        <p class="muted">Add up to 10 rows. Leave a row blank to ignore it.</p>
+      </div>
+      <button type="button" class="secondary" data-vista-add-row>Add Row</button>
+    </div>
+
+    <div class="vista-report-ads-list">
+      <% for (let index = 0; index < 10; index += 1) { %>
+        <%
+          const nameValue = adNames[index] || '';
+          const durationValue = adDurations[index] || '';
+          const playsValue = adPlays[index] || '';
+          const hasRowData = Boolean(String(nameValue).trim() || String(durationValue).trim() || String(playsValue).trim());
+          const hiddenByDefault = !hasRowData && index >= rowsVisibleByDefault;
+        %>
+        <div
+          class="vista-report-ad-row <%= hiddenByDefault ? 'is-hidden' : '' %>"
+          data-vista-ad-row
+          data-row-index="<%= index %>"
+        >
+          <label>
+            <span>Name</span>
+            <input type="text" name="<%= prefix %>[other_ads][name]" value="<%= nameValue %>" placeholder="Ad or clip name">
+          </label>
+          <label>
+            <span>Time (mm:ss)</span>
+            <input type="text" name="<%= prefix %>[other_ads][duration]" value="<%= durationValue %>" placeholder="01:30">
+          </label>
+          <label>
+            <span>Plays in 1 Playlist</span>
+            <input type="number" name="<%= prefix %>[other_ads][plays]" min="0" step="1" value="<%= playsValue %>">
+          </label>
+          <div class="vista-report-ad-row-actions">
+            <button type="button" class="secondary" data-vista-remove-row>Remove</button>
+          </div>
+        </div>
+      <% } %>
+    </div>
+  </div>
+</section>

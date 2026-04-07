@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= reportView ? reportView.title : 'VISTA Report' %></title>
+  <link rel="stylesheet" href="/css/vista-report.css">
+</head>
+<body class="vista-report-print-page">
+  <% if (reportView) { %>
+    <main class="vista-report-print-shell">
+      <div class="vista-report-print-toolbar no-print">
+        <a class="secondary-link" href="/admin/vista-report">Back to VISTA Report</a>
+        <a class="secondary-link" href="/admin/vista-report/history">View Saved Reports</a>
+        <button type="button" class="secondary" onclick="window.print();">Print</button>
+      </div>
+      <%- include('partials/vista-report-result', {
+        reportView,
+        showActions: false,
+      }) %>
+    </main>
+    <script>
+      window.addEventListener('load', () => {
+        window.setTimeout(() => {
+          window.print();
+        }, 250);
+      });
+    </script>
+  <% } else { %>
+    <main class="vista-report-print-shell">
+      <p><%= error || 'Report not found.' %></p>
+    </main>
+  <% } %>
+</body>
+</html>

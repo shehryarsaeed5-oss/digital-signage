@@ -1,0 +1,108 @@
+<%- include('partials/layout-start', { pageTitle: 'VISTA Report History' }) %>
+<link rel="stylesheet" href="/css/vista-report.css">
+
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>VISTA Report History</h1>
+    <p class="muted">Filter saved daily and weekly reports, then view, print, or delete them.</p>
+  </div>
+  <div class="page-header-actions no-print">
+    <a class="secondary-link" href="/admin/vista-report">Back to VISTA Report</a>
+  </div>
+</header>
+
+<main class="admin-grid vista-report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <section class="panel panel-wide no-print">
+    <div class="panel-heading">
+      <div>
+        <h2>Filters</h2>
+        <p class="muted">Use these filters to find a saved report quickly.</p>
+      </div>
+    </div>
+
+    <form method="get" action="/admin/vista-report/history" class="vista-report-filter-grid">
+      <label>
+        <span>Report Type</span>
+        <select name="type">
+          <option value="" <%= !filters.reportType ? 'selected' : '' %>>All Types</option>
+          <option value="daily" <%= filters.reportType === 'daily' ? 'selected' : '' %>>Daily</option>
+          <option value="weekly" <%= filters.reportType === 'weekly' ? 'selected' : '' %>>Weekly</option>
+        </select>
+      </label>
+      <label>
+        <span>Site / Screen Name</span>
+        <input type="text" name="site" value="<%= filters.siteName || '' %>" placeholder="Cinema wall or site name">
+      </label>
+      <label>
+        <span>Date / Week Start</span>
+        <input type="date" name="date" value="<%= filters.reportDate || '' %>">
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="secondary">Apply Filters</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel panel-wide">
+    <div class="panel-heading">
+      <div>
+        <h2>Saved Reports</h2>
+        <p class="muted">Open a report to review it or print it as a PDF.</p>
+      </div>
+    </div>
+
+    <% if (!reports || reports.length === 0) { %>
+      <p class="empty-state">No saved reports found.</p>
+    <% } else { %>
+      <div class="vista-report-history-wrap">
+        <table class="vista-report-history-table">
+          <thead>
+            <tr>
+              <th scope="col">Type</th>
+              <th scope="col">Site / Screen</th>
+              <th scope="col">Date / Week</th>
+              <th scope="col">Created</th>
+              <th scope="col">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% reports.forEach((report) => { %>
+              <tr>
+                <td>
+                  <span class="vista-report-type-pill <%= report.reportType === 'weekly' ? 'is-weekly' : 'is-daily' %>">
+                    <%= report.reportType %>
+                  </span>
+                </td>
+                <td><strong><%= report.siteName %></strong></td>
+                <td><%= report.dateLabel || '—' %></td>
+                <td><%= report.createdAt || '—' %></td>
+                <td>
+                  <div class="vista-report-history-actions no-print">
+                    <a class="secondary-link" href="<%= report.viewUrl %>">View</a>
+                    <a class="secondary-link" href="<%= report.printUrl %>" target="_blank" rel="noreferrer">Print PDF</a>
+                    <form method="post" action="<%= report.deleteUrl %>" onsubmit="return confirm('Delete this report?');">
+                      <button type="submit" class="danger-button">Delete</button>
+                    </form>
+                  </div>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('partials/layout-end') %>
