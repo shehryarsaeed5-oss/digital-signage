@@ -1,0 +1,22 @@
+{
+  "name": "digitalsign",
+  "version": "1.0.0",
+  "description": "Minimal LAN-only digital signage MVP",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "connect-sqlite3": "^0.9.16",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "multer": "^2.1.1",
+    "node-cron": "^4.2.1",
+    "sqlite3": "^6.0.1"
+  }
+}

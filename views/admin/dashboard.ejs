@@ -1,0 +1,117 @@
+<%- include('partials/layout-start', { pageTitle: 'Digital Signage Admin' }) %>
+  <header class="page-header">
+    <div class="page-header-copy">
+      <h1>Dashboard</h1>
+      <p class="muted">Monitor the live cinema signage system, review synced content, and jump directly to the active player surfaces.</p>
+    </div>
+  </header>
+
+  <main class="admin-grid dashboard-grid">
+    <section class="panel panel-wide dashboard-hero">
+      <div class="dashboard-hero-copy">
+        <p class="dashboard-kicker">Live Cinema Overview</p>
+        <h2>Current signage is driven by synced movies, player settings, and ad playback</h2>
+        <p class="muted">The dashboard now reflects the active cinema flow rather than the legacy manual playlist builder. Use Movie Sync for titles, Ads Manager for creative rotation, and Playlist for the combined live lineup.</p>
+      </div>
+      <div class="dashboard-stats dashboard-stats-live">
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Synced Movies</span>
+          <strong class="dashboard-stat-value"><%= totalMovies %></strong>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Now Showing</span>
+          <strong class="dashboard-stat-value"><%= nowShowingCount %></strong>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Coming Soon</span>
+          <strong class="dashboard-stat-value"><%= comingSoonCount %></strong>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Active Ads</span>
+          <strong class="dashboard-stat-value"><%= activeAdsCount %></strong>
+        </article>
+        <article class="dashboard-stat-card">
+          <span class="dashboard-stat-label">Inactive Ads</span>
+          <strong class="dashboard-stat-value"><%= inactiveAdsCount %></strong>
+        </article>
+      </div>
+    </section>
+
+    <% if (message) { %>
+      <section class="panel panel-wide">
+        <div class="alert success"><%= message %></div>
+      </section>
+    <% } %>
+
+    <% if (error) { %>
+      <section class="panel panel-wide">
+        <div class="alert error"><%= error %></div>
+      </section>
+    <% } %>
+
+    <section class="panel dashboard-quick-links panel-wide">
+      <div class="panel-heading">
+        <div>
+          <h2>Quick Links</h2>
+          <p class="muted">Open the active control areas and player endpoints without leaving the admin shell.</p>
+        </div>
+      </div>
+      <div class="dashboard-link-grid">
+        <a class="dashboard-link-card" href="/admin/movie-sync">
+          <strong>Movie Sync</strong>
+          <span class="muted">Review synced titles and run the CUE import tools.</span>
+        </a>
+        <a class="dashboard-link-card" href="/admin/ads">
+          <strong>Ads Manager</strong>
+          <span class="muted">Upload, activate, and order the ad creatives used in the live players.</span>
+        </a>
+        <a class="dashboard-link-card" href="/admin/player-settings">
+          <strong>Player Settings</strong>
+          <span class="muted">Manage durations and ad frequency used by the cinema players.</span>
+        </a>
+        <a class="dashboard-link-card" href="/admin/playlist">
+          <strong>Playlist</strong>
+          <span class="muted">View the live combined lineup of synced movies and current ads.</span>
+        </a>
+        <a class="dashboard-link-card" href="/player/cinema" target="_blank" rel="noreferrer">
+          <strong>Cinema Player</strong>
+          <span class="muted">Open the existing 3x3 landscape cinema wall.</span>
+        </a>
+        <a class="dashboard-link-card" href="/player/cinema-3x2" target="_blank" rel="noreferrer">
+          <strong>Cinema Player 3x2</strong>
+          <span class="muted">Open the 3x2 landscape cinema wall.</span>
+        </a>
+        <a class="dashboard-link-card" href="/player/cinema-portrait" target="_blank" rel="noreferrer">
+          <strong>Cinema Portrait Player</strong>
+          <span class="muted">Open the portrait cinema player view.</span>
+        </a>
+      </div>
+    </section>
+
+    <section class="panel panel-wide dashboard-system-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>System Snapshot</h2>
+          <p class="muted">A quick readout of what currently drives the cinema signage experience.</p>
+        </div>
+      </div>
+      <div class="dashboard-snapshot-grid">
+        <article class="dashboard-snapshot-card">
+          <span class="dashboard-snapshot-label">Live Playlist Source</span>
+          <strong>Synced movies + active ads</strong>
+          <p class="muted">Movies are populated from the CUE sync. Ads come from Ads Manager and follow their active or inactive state.</p>
+        </article>
+        <article class="dashboard-snapshot-card">
+          <span class="dashboard-snapshot-label">Last Movie Sync</span>
+          <strong><%= lastSyncedAt || 'Not confirmed' %></strong>
+          <p class="muted">Based on the latest <code>movies.last_synced_at</code> timestamp for the CUE cinema source.</p>
+        </article>
+        <article class="dashboard-snapshot-card">
+          <span class="dashboard-snapshot-label">Legacy Manual Playlist</span>
+          <strong>Still in backend only</strong>
+          <p class="muted">The old media and playlist tables remain untouched in this phase, but their dashboard UI is no longer shown.</p>
+        </article>
+      </div>
+    </section>
+  </main>
+<%- include('partials/layout-end') %>

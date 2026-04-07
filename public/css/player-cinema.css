@@ -1,0 +1,313 @@
+:root {
+  /*
+    On-site wall calibration:
+    - Adjust --wall-gap to match the visual bezel join between physical LCD panels.
+    - Adjust --wall-padding and --screen-safe-padding first if content feels too close to outer edges or bezel lines.
+    - Adjust --screen-padding, --title-size, and --time-pill-size for distance readability after spacing is set.
+    - Use --featured-poster-width and --standard-poster-width to tune poster presence without changing the 3x3 mapping.
+  */
+  --wall-gap: 30px;
+  --wall-padding: 30px;
+  --cinema-wall-gap: 30px;
+  --cinema-wall-padding: 30px;
+  --screen-padding: 22px;
+  --screen-safe-padding: 10px;
+  --screen-radius: 20px;
+  --screen-header-gap: 8px;
+  --screen-content-gap: 16px;
+  --screen-surface-border: rgba(255, 255, 255, 0.06);
+  --cinema-wall-title-size: 2.2rem;
+  --cinema-wall-showtime-size: 1.6rem;
+  --cinema-wall-status-size: 1.2rem;
+  --cinema-wall-card-padding: 40px;
+  --cinema-wall-poster-width: 38%;
+  --cinema-wall-radius: 0px;
+  --cinema-wall-header-gap: 16px;
+  --cinema-wall-content-scale: 1;
+
+  --kicker-size: 0.92rem;
+  --hero-title-size: clamp(2.2rem, 3vw, 3.7rem);
+  --section-title-size: clamp(1.45rem, 1.8vw, 2.4rem);
+  --title-size: clamp(1.35rem, 1.4vw, 1.95rem);
+  --featured-title-size: clamp(1.95rem, 2.1vw, 2.9rem);
+  --meta-size: 0.82rem;
+  --label-size: 0.76rem;
+  --time-pill-size: 0.94rem;
+  --copy-size: clamp(1.1rem, 1.24vw, 1.62rem);
+  --empty-size: clamp(1rem, 1.02vw, 1.36rem);
+
+  --card-radius: 18px;
+  --card-padding: 16px;
+  --card-gap: 16px;
+  --card-border: rgba(255, 255, 255, 0.08);
+  --poster-radius: 14px;
+  --featured-poster-width: minmax(190px, 40%);
+  --standard-poster-width: minmax(116px, 31%);
+  --poster-max-width: 360px;
+  --supporting-poster-max-width: 220px;
+
+  --meta-pill-height: 32px;
+  --time-pill-height: 40px;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #04060a;
+  color: #f8fafc;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.cinema-wall {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(3, 1fr);
+  gap: var(--cinema-wall-gap);
+  padding: var(--cinema-wall-padding);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(225, 146, 70, 0.08), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(137, 57, 27, 0.1), transparent 28%),
+    #030509;
+}
+
+.cinema-runtime-hooks {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wall-screen {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+  border-radius: var(--cinema-wall-radius);
+}
+
+.wall-screen-body,
+.wall-slot {
+  width: 100%;
+  height: 100%;
+}
+
+.cinema-card {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #05070a;
+  display: grid;
+  grid-template-columns: var(--cinema-wall-poster-width) 1fr;
+  gap: 0;
+  align-items: stretch;
+  border-radius: var(--cinema-wall-radius);
+}
+
+.cinema-poster-shell-main {
+  height: 100%;
+  width: 100%;
+  background: #000;
+  overflow: hidden;
+}
+
+.cinema-poster {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: left center;
+}
+
+.cinema-card-info {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: calc(var(--cinema-wall-card-padding) * var(--cinema-wall-content-scale));
+  min-width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #05070a 0%, #0d121a 100%);
+}
+
+.cinema-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: calc(var(--cinema-wall-header-gap) * var(--cinema-wall-content-scale));
+}
+
+.cinema-card-title {
+  margin: 0;
+  color: #fff8ee;
+  font-size: calc(var(--cinema-wall-title-size) * var(--cinema-wall-content-scale));
+  font-weight: 800;
+  line-height: 1.0;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.cinema-card-runtime {
+  color: #f6c671;
+  font-size: calc(var(--cinema-wall-status-size) * var(--cinema-wall-content-scale));
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.cinema-card-bottom {
+  width: 100%;
+}
+
+.cinema-showtimes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: calc(18px * var(--cinema-wall-content-scale));
+  justify-content: flex-start;
+}
+
+.cinema-time-pill {
+  min-height: calc(64px * var(--cinema-wall-content-scale));
+  min-width: 110px;
+  padding: 0 calc(24px * var(--cinema-wall-content-scale));
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: calc(var(--cinema-wall-showtime-size) * var(--cinema-wall-content-scale));
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: var(--cinema-wall-radius);
+}
+
+.cinema-time-pill.current {
+  background: linear-gradient(135deg, #f6cb74, #f59e0b);
+  color: #170c02;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+  border-color: transparent;
+}
+
+.cinema-release-info {
+  display: flex;
+  flex-direction: column;
+  gap: calc(14px * var(--cinema-wall-content-scale));
+}
+
+.cinema-release-label {
+  color: #f6c671;
+  font-size: calc(var(--cinema-wall-status-size) * var(--cinema-wall-content-scale));
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.cinema-release-date {
+  color: #fff;
+  font-size: clamp(2.2rem, 2.4vw, 3.2rem);
+  font-weight: 800;
+  line-height: 1.0;
+  text-shadow: 0 4px 8px rgba(0,0,0,0.5);
+}
+
+.cinema-note,
+.cinema-empty {
+  color: rgba(232, 238, 247, 0.8);
+  font-size: 1.4rem;
+  line-height: 1.42;
+}
+
+.cinema-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+.cinema-wall-empty-state {
+  grid-column: 1 / -1;
+  grid-row: 1 / -1;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: 48px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: var(--cinema-wall-radius);
+  background:
+    radial-gradient(circle at top left, rgba(225, 146, 70, 0.06), transparent 30%),
+    linear-gradient(180deg, rgba(8, 12, 20, 0.96) 0%, rgba(3, 5, 9, 0.98) 100%);
+}
+
+.cinema-wall-empty-copy {
+  max-width: 840px;
+  display: grid;
+  gap: 18px;
+}
+
+.cinema-wall-empty-kicker {
+  color: #f6c671;
+  font-size: calc(var(--cinema-wall-status-size) * 1.05);
+  font-weight: 800;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+.cinema-wall-empty-title {
+  margin: 0;
+  color: #fff8ee;
+  font-size: clamp(3rem, 4vw, 5rem);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.cinema-wall-empty-text {
+  margin: 0;
+  color: rgba(232, 238, 247, 0.84);
+  font-size: clamp(1.15rem, 1.5vw, 1.75rem);
+  line-height: 1.45;
+}
+
+@media (max-width: 2200px) {
+  :root {
+    --wall-gap: 24px;
+    --wall-padding: 24px;
+    --screen-padding: 18px;
+    --screen-safe-padding: 8px;
+    --featured-poster-width: minmax(160px, 38%);
+    --standard-poster-width: minmax(108px, 29%);
+    --poster-max-width: 300px;
+    --supporting-poster-max-width: 190px;
+  }
+}
+
+@media (max-width: 1800px) {
+  :root {
+    --wall-gap: 20px;
+    --wall-padding: 20px;
+    --screen-padding: 16px;
+    --screen-safe-padding: 6px;
+    --screen-radius: 16px;
+    --card-padding: 14px;
+    --card-gap: 14px;
+    --title-size: clamp(1.15rem, 1.15vw, 1.65rem);
+    --featured-title-size: clamp(1.5rem, 1.55vw, 2.2rem);
+    --time-pill-size: 0.86rem;
+    --time-pill-height: 34px;
+    --meta-size: 0.78rem;
+  }
+}

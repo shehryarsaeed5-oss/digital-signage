@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= pageTitle %></title>
+  <link rel="stylesheet" href="/css/admin.css">
+</head>
+<body class="admin-body">
+  <div class="admin-shell">
+    <%- include('sidebar') %>
+    <div class="admin-main">
+      <header class="admin-appbar">
+        <div class="admin-appbar-copy">
+          <p class="admin-appbar-kicker">Admin Panel</p>
+          <h1 class="admin-appbar-title"><%= pageTitle %></h1>
+        </div>
+        <div class="admin-appbar-meta">
+          <span class="admin-appbar-chip">Digital Signage</span>
+        </div>
+      </header>
+      <div class="admin-main-shell">

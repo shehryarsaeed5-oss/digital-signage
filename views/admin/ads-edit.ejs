@@ -1,0 +1,86 @@
+<%- include('partials/layout-start', { pageTitle: 'Edit Ad' }) %>
+  <header class="page-header">
+    <div class="page-header-copy">
+      <h1>Edit Ad</h1>
+      <p class="muted">Tune the metadata for an existing ad without needing to re-upload the asset.</p>
+    </div>
+    <div class="page-header-actions">
+      <a class="secondary-link" href="/admin/ads/new">Upload New Ad</a>
+      <a class="secondary-link" href="/admin/ads">Back to Ads Manager</a>
+    </div>
+  </header>
+
+  <main class="admin-grid">
+    <section class="panel panel-wide">
+      <div class="panel-heading">
+        <div>
+          <h2>Ad Settings</h2>
+          <p class="muted">Adjust the title, duration, visibility, or target screens.</p>
+        </div>
+      </div>
+
+      <% if (error) { %>
+        <div class="alert error"><%= error %></div>
+      <% } %>
+
+      <% if (ad) { %>
+        <div id="ad-edit-message" class="alert success hidden"></div>
+        <form id="ad-edit-form" data-ad-id="<%= ad.id %>" class="stack">
+          <input type="hidden" name="id" value="<%= ad.id %>">
+
+          <label>
+            <span>Title</span>
+            <input
+              type="text"
+              name="title"
+              value="<%= ad.title || '' %>"
+              placeholder="Optional ad title"
+            >
+          </label>
+
+          <label>
+            <span>Duration (seconds)</span>
+            <input
+              type="number"
+              name="duration_seconds"
+              min="1"
+              step="1"
+              value="<%= typeof ad.duration_seconds === 'number' ? ad.duration_seconds : '' %>"
+            >
+            <p class="muted" style="margin-top: 4px;">
+              Leave empty for video assets that should play for their full length.
+            </p>
+          </label>
+
+          <label>
+            <span>Status</span>
+            <select name="status">
+              <option value="inactive" <%= ad.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+              <option value="active" <%= ad.status === 'active' ? 'selected' : '' %>>Active</option>
+            </select>
+          </label>
+
+          <label>
+            <span>Screen Targets</span>
+            <input
+              type="text"
+              name="screen_targets"
+              value="<%= ad.screen_targets || '' %>"
+              placeholder="e.g. cinema, cinema-3x2, cinema-portrait"
+            >
+            <p class="muted" style="margin-top: 4px;">
+              Comma-separated. Leave blank to target all players.
+            </p>
+          </label>
+
+          <div class="form-actions">
+            <button type="submit">Save changes</button>
+          </div>
+        </form>
+      <% } else if (!error) { %>
+        <p class="muted">No ad data is available. Navigate back to continue.</p>
+      <% } %>
+    </section>
+  </main>
+  <script type="module" src="/js/admin-ads-edit.js"></script>
+<%- include('partials/layout-end') %>

@@ -1,0 +1,282 @@
+:root {
+  /*
+    3x2 wall variant:
+    - Preserves the cinema wall visual treatment from the 3x3 player.
+    - Uses the same responsive typography and card proportions where possible.
+  */
+  --wall-gap: 30px;
+  --wall-padding: 30px;
+}
+
+html,
+body {
+  margin: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #04060a;
+  color: #f8fafc;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+body {
+  overscroll-behavior: none;
+}
+
+.cinema-wall-3x2 {
+  width: 100vw;
+  height: 100vh;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  gap: var(--wall-gap);
+  padding: var(--wall-padding);
+  overflow: hidden;
+  background:
+    radial-gradient(circle at top left, rgba(225, 146, 70, 0.08), transparent 28%),
+    radial-gradient(circle at bottom right, rgba(137, 57, 27, 0.10), transparent 28%),
+    #030509;
+}
+
+.cinema-runtime-hooks {
+  position: absolute;
+  width: 0;
+  height: 0;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.wall-screen {
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background: #000;
+  position: relative;
+}
+
+.wall-screen-body,
+.wall-slot {
+  width: 100%;
+  height: 100%;
+}
+
+.cinema-card {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background: #05070a;
+  display: flex;
+  gap: 0;
+  align-items: stretch;
+}
+
+.cinema-poster-shell-main {
+  flex: 0 0 40%;
+  width: 40%;
+  min-width: 0;      /* changed from 34% */
+  max-width: 80%;    /* changed from 44% */
+  height: 100%;
+  background: #000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;        /* changed from 16px */
+  box-sizing: border-box;
+}
+
+.cinema-poster {
+  width: 80%;        /* changed from 150px */
+  height: auto;      /* changed from 220px */
+  max-height: 80%;   /* new line */
+  object-fit: contain;
+  object-position: center center;
+  display: block;
+}
+
+.cinema-poster-fallback {
+  width: 150px;
+  height: 220px;
+  max-width: 100%;
+  max-height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  box-sizing: border-box;
+  padding: 12px;
+}
+
+@media (max-width: 1800px) {
+  .cinema-poster-shell-main {
+    flex-basis: 42%;
+    width: 42%;
+    max-width: 46%;
+  }
+
+  .cinema-poster,
+  .cinema-poster-fallback {
+    width: 140px;
+    height: 205px;
+  }
+}
+
+@media (max-width: 1200px) {
+  .cinema-poster-shell-main {
+    flex-basis: 44%;
+    width: 44%;
+    max-width: 48%;
+    padding: 12px;
+  }
+
+  .cinema-poster,
+  .cinema-poster-fallback {
+    width: 128px;
+    height: 188px;
+  }
+}
+
+.cinema-card-info {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  padding: 40px;
+  min-width: 0;
+  height: 100%;
+  background: linear-gradient(90deg, #05070a 0%, #0d121a 100%);
+}
+
+.cinema-card-top {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cinema-card-title {
+  margin: 0;
+  color: #fff8ee;
+  font-size: clamp(2rem, 2.2vw, 3.4rem);
+  font-weight: 800;
+  line-height: 1.0;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.cinema-card-runtime {
+  color: #f6c671;
+  font-size: 1.1rem;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+.cinema-card-bottom {
+  width: 100%;
+}
+
+.cinema-showtimes-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 18px;
+  justify-content: flex-start;
+}
+
+.cinema-time-pill {
+  min-height: 56px;
+  min-width: 104px;
+  padding: 0 24px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+  font-size: 1.4rem;
+  font-weight: 800;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+}
+
+.cinema-time-pill.current {
+  background: linear-gradient(135deg, #f6cb74, #f59e0b);
+  color: #170c02;
+  box-shadow: 0 8px 24px rgba(245, 158, 11, 0.4);
+  border-color: transparent;
+}
+
+.cinema-release-info {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.cinema-release-label {
+  color: #f6c671;
+  font-size: 1.25rem;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+
+.cinema-release-date {
+  color: #fff;
+  font-size: clamp(2rem, 2.1vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.0;
+  text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+}
+
+.cinema-note,
+.cinema-empty {
+  color: rgba(232, 238, 247, 0.8);
+  font-size: 1.3rem;
+  line-height: 1.42;
+}
+
+.cinema-empty {
+  height: 100%;
+  display: grid;
+  place-items: center;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.01);
+}
+
+@media (max-width: 2200px) {
+  :root {
+    --wall-gap: 24px;
+    --wall-padding: 24px;
+  }
+
+  .cinema-card-info {
+    padding: 32px;
+  }
+}
+
+@media (max-width: 1800px) {
+  :root {
+    --wall-gap: 20px;
+    --wall-padding: 20px;
+  }
+
+  .cinema-card-info {
+    padding: 24px;
+  }
+
+  .cinema-card-title {
+    font-size: clamp(1.6rem, 1.85vw, 2.6rem);
+  }
+
+  .cinema-time-pill {
+    min-height: 48px;
+    min-width: 92px;
+    font-size: 1.2rem;
+  }
+
+  .cinema-release-date {
+    font-size: clamp(1.6rem, 1.75vw, 2.3rem);
+  }
+}

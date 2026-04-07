@@ -1,0 +1,288 @@
+<%- include('partials/layout-start', { pageTitle: 'CUE Cinema Sync' }) %>
+  <header class="page-header">
+    <div class="page-header-copy">
+      <h1>CUE Cinema Sync</h1>
+      <p class="muted">Preview synced CUE cinema movies and run the scraper without affecting the signage playlist.</p>
+    </div>
+    <div class="page-header-actions">
+      <a class="secondary-link" href="/admin/movie-sync/preview-all" target="_blank" rel="noreferrer">Open JSON Preview</a>
+    </div>
+  </header>
+
+  <main class="admin-grid">
+    <section class="panel panel-wide">
+      <div class="panel-heading movie-sync-toolbar">
+        <div>
+          <h2>Synced Movies</h2>
+          <p class="muted">Source: CUE Cinemas. Posters are stored locally under <code>/uploads_test/movies</code>.</p>
+        </div>
+        <div class="page-header-actions">
+          <button type="button" id="run-sync-button">Run Sync Now</button>
+          <button type="button" id="run-sync-refresh-posters-button" class="secondary">Run Sync + Refresh Posters</button>
+        </div>
+      </div>
+
+      <div id="sync-summary" class="alert success hidden"></div>
+      <div id="sync-error" class="alert error hidden"></div>
+
+      <% if (movies.length === 0) { %>
+        <p class="empty-state">No synced movies found yet.</p>
+      <% } else { %>
+        <div class="movie-sync-table-shell">
+          <table class="movie-sync-table" id="movie-sync-table">
+            <thead>
+              <tr>
+                <th scope="col" class="is-sortable" data-sort-key="serial" data-sort-type="number" aria-sort="ascending">
+                  <button type="button" class="movie-sync-sort-button">
+                    <span>SR No.</span>
+                    <span class="movie-sync-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col">Poster</th>
+                <th scope="col" class="is-sortable" data-sort-key="title" data-sort-type="text" aria-sort="none">
+                  <button type="button" class="movie-sync-sort-button">
+                    <span>Movie Name</span>
+                    <span class="movie-sync-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col" class="is-sortable" data-sort-key="status" data-sort-type="status" aria-sort="none">
+                  <button type="button" class="movie-sync-sort-button">
+                    <span>Status</span>
+                    <span class="movie-sync-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col" class="is-sortable" data-sort-key="duration" data-sort-type="duration" aria-sort="none">
+                  <button type="button" class="movie-sync-sort-button">
+                    <span>Duration</span>
+                    <span class="movie-sync-sort-indicator" aria-hidden="true"></span>
+                  </button>
+                </th>
+                <th scope="col">Showtimes</th>
+                <th scope="col">Description</th>
+              </tr>
+            </thead>
+            <tbody id="movie-sync-table-body">
+              <% movies.forEach((movie, index) => { %>
+                <tr
+                  data-serial="<%= index + 1 %>"
+                  data-title="<%= movie.title || '' %>"
+                  data-status="<%= movie.status || '' %>"
+                  data-duration="<%= movie.runtime || '' %>"
+                >
+                  <td class="movie-sync-serial"><%= index + 1 %></td>
+                  <td class="movie-sync-poster-cell">
+                    <div class="movie-poster-shell">
+                      <% if (movie.local_poster_path || movie.poster_url) { %>
+                        <img
+                          class="movie-poster movie-poster-thumb"
+                          src="<%= movie.local_poster_path || movie.poster_url %>"
+                          alt="<%= movie.title %> poster"
+                          loading="lazy"
+                        >
+                      <% } else { %>
+                        <div class="movie-poster movie-poster-thumb movie-poster-fallback">No Poster</div>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="movie-sync-name-cell">
+                    <div class="movie-name-stack">
+                      <strong class="movie-name-primary"><%= movie.title %></strong>
+                      <div class="movie-name-meta muted">
+                        <span><%= movie.release_date || 'Release date unavailable' %></span>
+                        <% if (movie.genre) { %>
+                          <span><%= movie.genre %></span>
+                        <% } %>
+                      </div>
+                    </div>
+                  </td>
+                  <td class="movie-sync-status-cell">
+                    <span class="movie-status-badge status-<%= (movie.status || '').toLowerCase().replace(/\s+/g, '-') %>">
+                      <%= movie.status || 'Unknown' %>
+                    </span>
+                  </td>
+                  <td class="movie-sync-duration-cell">
+                    <span class="movie-duration-text"><%= movie.runtime || 'N/A' %></span>
+                  </td>
+                  <td class="movie-sync-showtimes-cell">
+                    <% if (movie.showtimesByDate.length === 0) { %>
+                      <span class="muted"><%= movie.status === 'Coming Soon' ? 'Coming soon' : 'No showtimes yet' %></span>
+                    <% } else { %>
+                      <div class="movie-showtimes-list">
+                        <% movie.showtimesByDate.forEach((entry) => { %>
+                          <div class="movie-showtime-block">
+                            <strong class="movie-showtime-date"><%= entry.date %></strong>
+                            <div class="movie-showtime-times muted"><%= entry.times.join(', ') %></div>
+                          </div>
+                        <% }); %>
+                      </div>
+                    <% } %>
+                  </td>
+                  <td class="movie-sync-description-cell">
+                    <p
+                      class="movie-synopsis movie-synopsis-clamp"
+                      title="<%= movie.synopsis || 'No synopsis available.' %>"
+                    ><%= movie.synopsis || 'No synopsis available.' %></p>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </main>
+
+  <script>
+    const movieSyncTable = document.getElementById('movie-sync-table');
+    const movieSyncTableBody = document.getElementById('movie-sync-table-body');
+    const sortableHeaders = Array.from(document.querySelectorAll('.movie-sync-table th.is-sortable'));
+    const runSyncButton = document.getElementById('run-sync-button');
+    const runSyncRefreshPostersButton = document.getElementById('run-sync-refresh-posters-button');
+    const syncSummary = document.getElementById('sync-summary');
+    const syncError = document.getElementById('sync-error');
+
+    function parseDurationToMinutes(value) {
+      const text = String(value || '').trim();
+      if (!text || text === 'N/A') {
+        return -1;
+      }
+
+      const hoursMatch = text.match(/(\d+)\s*h/i);
+      const minutesMatch = text.match(/(\d+)\s*m/i);
+      const numericMinutes = text.match(/^\d+$/);
+      const hours = hoursMatch ? Number.parseInt(hoursMatch[1], 10) : 0;
+      const minutes = minutesMatch ? Number.parseInt(minutesMatch[1], 10) : 0;
+
+      if (hoursMatch || minutesMatch) {
+        return (hours * 60) + minutes;
+      }
+
+      if (numericMinutes) {
+        return Number.parseInt(text, 10);
+      }
+
+      return Number.MAX_SAFE_INTEGER;
+    }
+
+    function getStatusSortWeight(value) {
+      const normalized = String(value || '').trim().toLowerCase();
+
+      if (normalized === 'now showing') {
+        return 0;
+      }
+
+      if (normalized === 'coming soon') {
+        return 1;
+      }
+
+      return 2;
+    }
+
+    function compareValues(leftRow, rightRow, sortType, sortKey, direction) {
+      let leftValue;
+      let rightValue;
+
+      if (sortType === 'number') {
+        leftValue = Number.parseInt(leftRow.dataset[sortKey] || '0', 10);
+        rightValue = Number.parseInt(rightRow.dataset[sortKey] || '0', 10);
+      } else if (sortType === 'duration') {
+        leftValue = parseDurationToMinutes(leftRow.dataset[sortKey]);
+        rightValue = parseDurationToMinutes(rightRow.dataset[sortKey]);
+      } else if (sortType === 'status') {
+        leftValue = getStatusSortWeight(leftRow.dataset[sortKey]);
+        rightValue = getStatusSortWeight(rightRow.dataset[sortKey]);
+
+        if (leftValue === rightValue) {
+          leftValue = String(leftRow.dataset[sortKey] || '').toLowerCase();
+          rightValue = String(rightRow.dataset[sortKey] || '').toLowerCase();
+        }
+      } else {
+        leftValue = String(leftRow.dataset[sortKey] || '').toLowerCase();
+        rightValue = String(rightRow.dataset[sortKey] || '').toLowerCase();
+      }
+
+      if (leftValue < rightValue) {
+        return direction === 'asc' ? -1 : 1;
+      }
+
+      if (leftValue > rightValue) {
+        return direction === 'asc' ? 1 : -1;
+      }
+
+      return 0;
+    }
+
+    function updateSortHeaderState(activeHeader, direction) {
+      sortableHeaders.forEach((header) => {
+        const isActive = header === activeHeader;
+        header.dataset.sortDirection = isActive ? direction : '';
+        header.setAttribute('aria-sort', isActive ? (direction === 'asc' ? 'ascending' : 'descending') : 'none');
+      });
+    }
+
+    function sortMovieTable(header) {
+      if (!movieSyncTableBody || !header) {
+        return;
+      }
+
+      const sortKey = header.dataset.sortKey;
+      const sortType = header.dataset.sortType || 'text';
+      const currentDirection = header.dataset.sortDirection === 'asc' ? 'asc' : 'desc';
+      const nextDirection = currentDirection === 'asc' ? 'desc' : 'asc';
+      const rows = Array.from(movieSyncTableBody.querySelectorAll('tr'));
+
+      rows.sort((leftRow, rightRow) => compareValues(leftRow, rightRow, sortType, sortKey, nextDirection));
+      rows.forEach((row) => movieSyncTableBody.appendChild(row));
+      updateSortHeaderState(header, nextDirection);
+    }
+
+    async function runSync(forcePosterRefresh = false) {
+      runSyncButton.disabled = true;
+      runSyncRefreshPostersButton.disabled = true;
+      runSyncButton.textContent = forcePosterRefresh ? 'Running Sync...' : 'Running Sync...';
+      runSyncRefreshPostersButton.textContent = forcePosterRefresh ? 'Refreshing Posters...' : 'Run Sync + Refresh Posters';
+      syncSummary.classList.add('hidden');
+      syncError.classList.add('hidden');
+
+      try {
+        const response = await fetch('/admin/movie-sync/run', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            forcePosterRefresh,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok) {
+          throw new Error(result.error || 'Sync request failed.');
+        }
+
+        const data = result.data || {};
+        syncSummary.textContent = `Movies saved: ${data.moviesSaved || 0} | Posters downloaded: ${data.postersDownloaded || 0} | Errors: ${data.errorsCount || 0}`;
+        syncSummary.classList.remove('hidden');
+        window.setTimeout(() => {
+          window.location.reload();
+        }, 1200);
+      } catch (error) {
+        syncError.textContent = error.message || 'Sync failed.';
+        syncError.classList.remove('hidden');
+      } finally {
+        runSyncButton.disabled = false;
+        runSyncRefreshPostersButton.disabled = false;
+        runSyncButton.textContent = 'Run Sync Now';
+        runSyncRefreshPostersButton.textContent = 'Run Sync + Refresh Posters';
+      }
+    }
+
+    runSyncButton?.addEventListener('click', () => runSync(false));
+    runSyncRefreshPostersButton?.addEventListener('click', () => runSync(true));
+    sortableHeaders.forEach((header) => {
+      header.querySelector('.movie-sync-sort-button')?.addEventListener('click', () => sortMovieTable(header));
+    });
+    updateSortHeaderState(sortableHeaders[0], 'asc');
+  </script>
+<%- include('partials/layout-end') %>

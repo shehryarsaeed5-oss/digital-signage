@@ -1,0 +1,114 @@
+<%- include('partials/layout-start', { pageTitle: 'Live Playlist' }) %>
+  <header class="page-header">
+    <div class="page-header-copy">
+      <h1>Playlist</h1>
+      <p class="muted">This page reflects the current live cinema lineup built from synced movies and ads manager data.</p>
+    </div>
+  </header>
+
+  <main class="admin-grid">
+    <section class="panel panel-wide">
+      <div class="panel-heading movie-sync-toolbar">
+        <div>
+          <h2>Live Playlist Overview</h2>
+          <p class="muted">Movies are sync-driven and treated as active content. Ads follow the active or inactive state configured in Ads Manager.</p>
+        </div>
+        <div class="playlist-page-summary">
+          <span class="playlist-summary-chip">Live Items: <strong><%= activeCount %></strong></span>
+          <span class="playlist-summary-chip is-muted">Hidden Movies: <strong><%= hiddenMoviesCount %></strong></span>
+          <span class="playlist-summary-chip is-muted">Inactive Ads: <strong><%= inactiveAdsCount %></strong></span>
+        </div>
+      </div>
+
+      <% if (success) { %>
+        <div class="alert success"><%= success %></div>
+      <% } %>
+
+      <% if (error) { %>
+        <div class="alert error"><%= error %></div>
+      <% } %>
+
+      <% if (rows.length === 0) { %>
+        <p class="empty-state">No live playlist data is available yet.</p>
+      <% } else { %>
+        <div class="movie-sync-table-shell">
+          <table class="movie-sync-table playlist-live-table">
+            <thead>
+              <tr>
+                <th scope="col">SR No.</th>
+                <th scope="col">Type</th>
+                <th scope="col">Poster / Thumbnail</th>
+                <th scope="col">Title / Name</th>
+                <th scope="col">Source</th>
+                <th scope="col">Duration / Runtime</th>
+                <th scope="col">Status</th>
+                <th scope="col">Last Updated</th>
+                <th scope="col">Notes</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% rows.forEach((row, index) => { %>
+                <tr>
+                  <td class="movie-sync-serial"><%= index + 1 %></td>
+                  <td class="playlist-type-cell">
+                    <span class="playlist-type-badge type-<%= row.itemType %>"><%= row.itemTypeLabel %></span>
+                  </td>
+                  <td class="movie-sync-poster-cell">
+                    <div class="movie-poster-shell">
+                      <% if (row.thumbnailPath) { %>
+                        <img
+                          class="movie-poster movie-poster-thumb"
+                          src="<%= row.thumbnailPath %>"
+                          alt="<%= row.title %> thumbnail"
+                          loading="lazy"
+                        >
+                      <% } else { %>
+                        <div class="playlist-video-thumb">Video</div>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="movie-sync-name-cell">
+                    <div class="movie-name-stack">
+                      <strong class="movie-name-primary"><%= row.title %></strong>
+                    </div>
+                  </td>
+                  <td class="playlist-source-cell">
+                    <span class="playlist-source-label"><%= row.sourceLabel %></span>
+                  </td>
+                  <td class="movie-sync-duration-cell">
+                    <span class="movie-duration-text"><%= row.durationLabel %></span>
+                  </td>
+                  <td class="movie-sync-status-cell">
+                    <span class="playlist-status-badge <%= row.isActive ? 'is-active' : 'is-inactive' %>"><%= row.statusLabel %></span>
+                  </td>
+                  <td class="playlist-updated-cell">
+                    <span class="playlist-date-text"><%= row.updatedAt || 'Not confirmed' %></span>
+                  </td>
+                  <td class="movie-sync-description-cell">
+                    <p class="movie-synopsis movie-synopsis-clamp" title="<%= row.notes %>"><%= row.notes %></p>
+                  </td>
+                  <td class="playlist-actions-cell">
+                    <% if (row.entityKind === 'movie') { %>
+                      <form method="post" action="/admin/playlist/movies/<%= row.id %>/toggle">
+                        <button type="submit" class="playlist-action-button <%= row.isActive ? 'is-danger' : 'is-neutral' %>">
+                          <%= row.isActive ? 'Hide' : 'Show' %>
+                        </button>
+                      </form>
+                    <% } else if (row.entityKind === 'ad') { %>
+                      <form method="post" action="/admin/playlist/ads/<%= row.id %>/toggle">
+                        <button type="submit" class="playlist-action-button <%= row.isActive ? 'is-danger' : 'is-neutral' %>">
+                          <%= row.isActive ? 'Deactivate' : 'Activate' %>
+                        </button>
+                      </form>
+                    <% } %>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
+        </div>
+      <% } %>
+    </section>
+  </main>
+<%- include('partials/layout-end') %>

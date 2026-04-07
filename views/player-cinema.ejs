@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinema Video Wall</title>
+  <link rel="stylesheet" href="/css/player-cinema.css">
+</head>
+<body>
+  <main id="cinema-player" class="cinema-wall">
+    <div class="cinema-runtime-hooks" aria-hidden="true">
+      <span id="cinema-clock">--:--</span>
+      <span id="cinema-status">Loading...</span>
+    </div>
+
+    <!-- Row 1 -->
+    <section class="wall-screen wall-screen-now">
+      <div id="now-slot-1" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <section class="wall-screen wall-screen-now">
+      <div id="now-slot-2" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <section class="wall-screen wall-screen-coming">
+      <div id="coming-slot-1" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <!-- Row 2 -->
+    <section class="wall-screen wall-screen-now">
+      <div id="now-slot-3" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <section class="wall-screen wall-screen-now">
+      <div id="now-slot-4" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <section class="wall-screen wall-screen-coming">
+      <div id="coming-slot-2" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <!-- Row 3 -->
+    <section class="wall-screen wall-screen-now">
+      <div id="now-slot-5" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <section class="wall-screen wall-screen-now">
+      <div id="now-slot-6" class="wall-screen-body wall-slot"></div>
+    </section>
+
+    <section class="wall-screen wall-screen-coming">
+      <div id="coming-slot-3" class="wall-screen-body wall-slot"></div>
+    </section>
+  </main>
+
+  <script src="/js/player-cinema.js"></script>
+</body>
+</html>

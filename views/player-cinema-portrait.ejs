@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cinema Portrait Player</title>
+  <link rel="stylesheet" href="/css/player-cinema-portrait.css">
+</head>
+<body>
+  <main id="cinema-portrait-player" class="cinema-portrait-player" data-version="2">
+    <div class="portrait-version-marker">V2</div>
+
+    <section id="portrait-slide-primary" class="portrait-slide is-visible" aria-live="polite">
+      <div id="portrait-poster-primary" class="portrait-poster-shell">
+        <div class="portrait-poster-fallback">Poster unavailable</div>
+      </div>
+      <footer class="portrait-info-strip">
+        <div id="portrait-status-primary" class="portrait-status-badge">
+          <div class="portrait-status-content">
+            <span class="portrait-status-line">NOW</span>
+            <span class="portrait-status-line">SHOWING</span>
+          </div>
+        </div>
+        <div class="portrait-info-main">
+          <h1 id="portrait-title-primary" class="portrait-title">Loading cinema schedule...</h1>
+          <div id="portrait-showtimes-primary" class="portrait-showtimes"></div>
+        </div>
+      </footer>
+    </section>
+
+    <section id="portrait-slide-secondary" class="portrait-slide" aria-hidden="true">
+      <div id="portrait-poster-secondary" class="portrait-poster-shell">
+        <div class="portrait-poster-fallback">Poster unavailable</div>
+      </div>
+      <footer class="portrait-info-strip">
+        <div id="portrait-status-secondary" class="portrait-status-badge">
+          <div class="portrait-status-content">
+            <span class="portrait-status-line">NOW</span>
+            <span class="portrait-status-line">SHOWING</span>
+          </div>
+        </div>
+        <div class="portrait-info-main">
+          <h2 id="portrait-title-secondary" class="portrait-title">Loading cinema schedule...</h2>
+          <div id="portrait-showtimes-secondary" class="portrait-showtimes"></div>
+        </div>
+      </footer>
+    </section>
+
+    <section id="portrait-empty" class="portrait-empty hidden" aria-live="polite">
+      <div class="portrait-empty-poster"></div>
+      <div class="portrait-empty-strip">
+        <div class="portrait-empty-status">
+          <div class="portrait-status-badge">
+            <div class="portrait-status-content">
+              <span class="portrait-status-line">NO</span>
+              <span class="portrait-status-line">MOVIES</span>
+            </div>
+          </div>
+        </div>
+        <div class="portrait-empty-copy">No cinema titles available</div>
+      </div>
+    </section>
+  </main>
+
+  <script src="/js/player-cinema-portrait.js"></script>
+</body>
+</html>

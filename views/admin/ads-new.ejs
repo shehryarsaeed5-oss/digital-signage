@@ -1,0 +1,148 @@
+<%- include('partials/layout-start', { pageTitle: 'Upload Ad' }) %>
+  <header class="page-header">
+    <div class="page-header-copy">
+      <h1>Upload Ad</h1>
+      <p class="muted">Upload an image or MP4 ad, set timing for images, and choose the initial status and sort order.</p>
+    </div>
+    <div class="page-header-actions">
+      <a class="secondary-link" href="/admin/ads">Back to Ads Manager</a>
+    </div>
+  </header>
+
+  <main class="admin-grid">
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Ad Details</h2>
+          <p class="muted">Complete the core ad settings below, then upload the file you want to add to the library.</p>
+        </div>
+      </div>
+
+      <% if (success) { %>
+        <div class="alert success"><%= success %></div>
+      <% } %>
+      <% if (error) { %>
+        <div class="alert error"><%= error %></div>
+      <% } %>
+
+      <form method="post" action="/admin/ads" enctype="multipart/form-data" class="stack">
+        <label>
+          <span>Title</span>
+          <input type="text" name="title" value="<%= formData.title %>" placeholder="Optional ad title">
+        </label>
+
+        <label>
+          <span>Duration (seconds)</span>
+          <input
+            type="number"
+            name="duration_seconds"
+            min="1"
+            step="1"
+            value="<%= formData.duration_seconds %>"
+          >
+        </label>
+
+        <label>
+          <span>Sort Order</span>
+          <input
+            type="number"
+            name="sort_order"
+            step="1"
+            value="<%= formData.sort_order %>"
+          >
+        </label>
+
+        <label>
+          <span>Status</span>
+          <select name="status">
+            <option value="inactive" <%= formData.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
+            <option value="active" <%= formData.status === 'active' ? 'selected' : '' %>>Active</option>
+          </select>
+        </label>
+
+        <label>
+          <span>Screen Targets</span>
+          <div class="checkbox-group" style="display: grid; gap: 10px; margin-top: 5px;">
+            <label class="checkbox-field" style="font-weight: normal;">
+              <span>Cinema (3x3 Wall)</span>
+              <input type="checkbox" name="screen_targets" value="cinema" checked>
+            </label>
+            <label class="checkbox-field" style="font-weight: normal;">
+              <span>Cinema 3x2</span>
+              <input type="checkbox" name="screen_targets" value="cinema-3x2" checked>
+            </label>
+            <label class="checkbox-field" style="font-weight: normal;">
+              <span>Cinema Portrait</span>
+              <input type="checkbox" name="screen_targets" value="cinema-portrait" checked>
+            </label>
+          </div>
+          <p class="muted" style="margin-top: 8px;">If no screens are selected, the ad will appear on all players.</p>
+        </label>
+
+        <label>
+          <span>Ad File</span>
+          <input
+            type="file"
+            name="ad_file"
+            accept=".jpg,.jpeg,.png,.webp,.mp4,image/jpeg,image/png,image/webp,video/mp4"
+            required
+          >
+        </label>
+
+        <p class="muted">Images require a duration. Videos ignore duration and play until the file ends.</p>
+
+        <div class="form-actions">
+          <button type="submit">Upload Ad</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Supported Files</h2>
+          <p class="muted">Use this as a quick reference when preparing new assets for upload.</p>
+        </div>
+      </div>
+      <div class="ads-help-list">
+        <p><strong>Images:</strong> JPG, JPEG, PNG, WEBP with a display duration in seconds.</p>
+        <p><strong>Videos:</strong> MP4. The player will use the full file length later without extra admin logic changes.</p>
+        <p><strong>Sort Order:</strong> Lower values appear earlier once player-side ads sequencing is implemented.</p>
+      </div>
+    </section>
+
+    <section class="panel panel-wide" id="ads-list-panel">
+      <div class="panel-heading">
+        <div>
+          <h2>Ads List</h2>
+          <p class="muted">Monitor existing ads, jump to editing, or remove stale entries without leaving this page.</p>
+        </div>
+        <div class="panel-heading-actions">
+          <button type="button" class="secondary" id="ads-refresh-button">Refresh</button>
+        </div>
+      </div>
+      <div class="ads-table-shell" id="ads-table-shell">
+        <div class="ads-table-state" id="ads-loading" aria-live="polite">Loading ads…</div>
+        <div class="ads-table-state ads-error hidden" id="ads-error" aria-live="polite"></div>
+        <p class="ads-empty-state hidden" id="ads-empty">No ads found</p>
+        <div class="ads-table-wrapper">
+          <table class="ads-table" aria-live="polite">
+            <thead>
+              <tr>
+                <th>Title</th>
+                <th>Duration (s)</th>
+                <th>Status</th>
+                <th>Screens</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="ads-table-body">
+              <!-- Rows inserted via JavaScript -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="/js/admin-ads-new.js"></script>
+<%- include('partials/layout-end') %>

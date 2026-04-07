@@ -1,0 +1,61 @@
+<%
+  const navGroups = [
+    {
+      title: 'Core Admin',
+      items: [
+        { href: '/admin', label: 'Dashboard' },
+        { href: '/admin/playlist', label: 'Playlist' },
+        { href: '/admin/ads', label: 'Ads Manager', matchPrefix: '/admin/ads' },
+        { href: '/admin/movie-sync', label: 'Movie Sync' },
+        { href: '/admin/player-settings', label: 'Player Settings' },
+      ],
+    },
+    {
+      title: 'Players',
+      items: [
+        { href: '/player/cinema', label: 'Cinema Player', external: true },
+        { href: '/player/cinema-3x2', label: 'Cinema Player 3x2', external: true },
+        { href: '/player/cinema-portrait', label: 'Cinema Portrait Player', external: true },
+      ],
+    },
+    {
+      title: 'Preview & Tools',
+      items: [
+        { href: '/admin/movie-sync/preview-now', label: 'Now Showing Preview', external: true },
+        { href: '/admin/movie-sync/preview-coming', label: 'Coming Soon Preview', external: true },
+        { href: '/admin/movie-sync/preview-all', label: 'Full Preview', external: true },
+      ],
+    },
+  ];
+%>
+<aside class="admin-sidebar">
+  <div class="admin-sidebar-brand">
+    <p class="admin-sidebar-kicker">Control Panel</p>
+    <h1>Digital Signage</h1>
+    <p class="muted">Manage signage media and the CUE cinema sync from one admin shell.</p>
+  </div>
+
+  <nav class="admin-sidebar-nav" aria-label="Admin navigation">
+    <% navGroups.forEach((group) => { %>
+      <section class="admin-nav-group">
+        <p class="admin-nav-group-title"><%= group.title %></p>
+        <div class="admin-nav-group-links">
+          <% group.items.forEach((item) => { %>
+            <% const isActive = currentPath === item.href || (item.matchPrefix && currentPath.startsWith(item.matchPrefix)); %>
+            <a
+              class="admin-nav-link <%= isActive ? 'is-active' : '' %>"
+              href="<%= item.href %>"
+              <%= item.external ? 'target="_blank" rel="noreferrer"' : '' %>
+            >
+              <span><%= item.label %></span>
+            </a>
+          <% }); %>
+        </div>
+      </section>
+    <% }); %>
+  </nav>
+
+  <form method="post" action="/admin/logout" class="admin-sidebar-footer">
+    <button type="submit" class="secondary admin-sidebar-logout">Logout</button>
+  </form>
+</aside>

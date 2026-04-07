@@ -1,0 +1,806 @@
+
+
+<!DOCTYPE html>
+<html xmlns:fb="http://ogp.me/ns/fb#" >
+<head>
+    <meta charset="utf-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <!-- facebook open graph metadata -->
+    
+
+
+    <title>CUE Cinemas</title>
+    <link rel="shortcut icon" href="//cuecinemas.com/IT-CDN/Themes/CUE/Images/favicon.ico" />
+
+    <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/MasterPage?v=500.317.0.21" rel="stylesheet" type="text/css" />
+    <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/BrowsingPages?v=500.317.0.21" rel="stylesheet" type="text/css" />
+    
+    <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/MovieDetails?v=500.317.0.21" rel="stylesheet" type="text/css" />
+    <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/Thirdparty/jquery-ui.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+    <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/Trailers/Controls.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/modernizr-2.6.2.min.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Vista.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Polyfill.js?v=500.317.0.21" type="text/javascript"></script>
+
+
+    <!--[if lte IE 8]>
+        <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/Browsing/IE8.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+        <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/IE8.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+    <![endif]-->
+    <!--[if lte IE 7]>
+        <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/Browsing/IE7.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+        <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/IE7.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+    <![endif]-->
+    <!--[if IE 6]>
+         <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/InternetExplorer6?v=500.317.0.21" rel="stylesheet" type="text/css" />
+         <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/Browsing/IE6.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+    <![endif]-->
+    <! Link in custom CSS files here, the path is relative to the CDN's /Css directory, e.g for /Css/Custom.css -->
+     <link href="//cuecinemas.com/IT-CDN/Themes/CUE/Css/Custom.css?v=500.317.0.21" rel="stylesheet" type="text/css" />
+
+    
+</head>
+<body>
+    <header>
+	
+
+
+
+
+
+
+
+<div class="fixed-content-wrapper">
+    <div class="fixed-content" id="main-menu-container">
+        <input class="menu-btn" type="checkbox" id="menu-btn" />
+        <label class="menu-icon" for="menu-btn"><span class="navicon"></span></label>
+        <h1 class="logo">
+            <em>CUE</em>CINEMAS
+        </h1>
+
+
+
+<nav id="main-menu">
+    <ul class="nav-first-level">
+            <li id="Home" class=" grid-7-col "><a href="//cuecinemas.com/Browsing/" target="_self">Home</a></li>
+            <li id="Movies" class="selected grid-7-col "><a href="//cuecinemas.com/Browsing/Movies/NowShowing" target="_self">Movies</a></li>
+            <li id="Cinemas" class=" grid-7-col "><a href="//cuecinemas.com/Browsing/Cinemas" target="_self">Cinemas</a></li>
+            <li id="Events" class=" grid-7-col col-span-2"><a href="//cuecinemas.com/Browsing/EventsAndExperiences" target="_self">Events &amp; Experiences</a></li>
+            <li id="Loyalty" class=" grid-7-col "><a href="//cuecinemas.com/Browsing/Loyalty/Clubs" target="_self">Loyalty</a></li>
+            <li id="Shop" class=" grid-7-col "><a href="//cuecinemas.com/Ticketing/visShop.aspx?visLang=1" target="_self">Shop</a></li>
+    </ul>
+    <nav class="sub-nav-base">
+            <ul class="sub-nav Home " style="display: none;">
+                <li class="more-nav-parent"><a>More</a> </li>
+            </ul>
+            <ul class="sub-nav Movies selected" style="display: none;">
+                    <li class="Movies "><a href="//cuecinemas.com/Browsing/Movies/NowShowing" title="Now Showing">Now Showing</a></li>
+                    <li class="Movies "><a href="//cuecinemas.com/Browsing/Movies/ComingSoon" title="Coming Soon">Coming Soon</a></li>
+                <li class="more-nav-parent"><a>More</a> </li>
+            </ul>
+            <ul class="sub-nav Cinemas " style="display: none;">
+                <li class="more-nav-parent"><a>More</a> </li>
+            </ul>
+            <ul class="sub-nav Events " style="display: none;">
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/EventDetails/0000000011" title="CHRISTMAS EVE">CHRISTMAS EVE</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/EventDetails/0000000008" title="HALLOWEEN NIGHT">HALLOWEEN NIGHT</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/EventDetails/0000000010" title="HUSH PUPPIES : BLACK CARPET WALKWAY BY MUNIB NAWAZ">HUSH PUPPIES : BLACK CARPET WALKWAY BY MUNIB NAWAZ</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/EventDetails/0000000014" title="LIFE OF PROF. DR JAVAID AKRAM">LIFE OF PROF. DR JAVAID AKRAM</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/MAXIMUS" title="MAXIMUS">MAXIMUS</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/EventDetails/0000000012" title="MERE PASS TUM HU LIVE SCREENING">MERE PASS TUM HU LIVE SCREENING</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/PLATINUM%207" title="PLATINUM 7">PLATINUM 7</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/PLATINUM%208" title="PLATINUM 8">PLATINUM 8</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/SCREEN%202" title="SCREEN 2">SCREEN 2</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/SCREEN%203" title="SCREEN 3">SCREEN 3</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/SCREEN%204" title="SCREEN 4">SCREEN 4</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/SCREEN%205" title="SCREEN 5">SCREEN 5</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/ExperienceDetails/SCREEN%206" title="SCREEN 6">SCREEN 6</a></li>
+                    <li class="Events "><a href="//cuecinemas.com/Browsing/EventsAndExperiences/EventDetails/0000000013" title="VALENTINE,S DAY">VALENTINE,S DAY</a></li>
+                <li class="more-nav-parent"><a>More</a> </li>
+            </ul>
+            <ul class="sub-nav Loyalty " style="display: none;">
+                <li class="more-nav-parent"><a>More</a> </li>
+            </ul>
+            <ul class="sub-nav Shop " style="display: none;">
+                <li class="more-nav-parent"><a>More</a> </li>
+            </ul>
+    </nav>
+</nav>
+<ul id="more-nav">
+</ul>
+
+
+    </div>
+</div>
+
+
+    </header>
+
+    <section id="banner">
+
+
+<div id="quick-tickets">
+    <h2>Pick Tickets</h2>
+    
+    <p>Browse and Book sessions easily. Start with your choice of Movie, Cinema, Show Type or Time.</p>
+
+    <button type="button" value="movie">Pick a<em>Movie</em></button><button type="button" value="cinema">Pick a<em>Cinema</em></button><button type="button" value="type">Pick a<em>Show Type</em></button><button type="button" value="time">Pick a<em>Time</em></button>
+</div>
+
+ <div id="quick-tickets-overlay">
+    <button type="button" class="close"><span>Close</span></button>
+
+    <div id="quick-tickets-details">
+        <h3>Pick<em></em></h3>
+        
+        <dl>
+            <dt class="movies">Movies:</dt>
+            <dd></dd>
+            <dt class="cinemas">Cinemas:</dt>
+            <dd></dd>
+            <dt class="types">Show Types:</dt>
+            <dd></dd>
+            <dt class="times">Time:</dt>
+            <dd></dd>
+        </dl>
+
+        <button type="button" class="restart user-action"><span class="icon">Start Again</span></button>
+        <button type="button" class="compare user-action"><span class="icon">Skip to Results</span></button>
+    </div>
+    
+    <div id="quick-tickets-selection">
+        <div class="selection"></div> 
+        
+        <div class="toolbar">
+            <span class="search">
+                <input type="text" placeholder="Search" />
+                <button type="button" class="clear-search"></button>
+            </span>
+            <button type="button" class="clear user-action"><span class="icon">Clear Selection</span></button>
+            <button type="button" class="next"><span class="icon"></span></button>
+        </div>
+    </div>
+</div>
+        <div id="qt-ad" class="generic-image-carousel"></div>
+    </section>
+
+    <section class="content">
+        <article>
+            
+
+
+
+<div class="movies-detail">
+
+    <div class="media-gallery">
+        <script type="text/javascript">
+            Vista.Localisation = {};
+            Vista.Localisation.CloseTrailer = 'Close';
+            Vista.Localisation.RateTrailer = 'Did you like this trailer?';
+            Vista.Localisation.YouLikedTheTrailer = 'You liked the trailer!';
+            Vista.Localisation.YouDislikedTheTrailer = 'You disliked the trailer!';
+        </script>
+        
+<div id="trailer-wrapper">
+            <a href="//www.youtube.com/watch?v=hverb7siYJ8" id="trailer" data-movie-id="h-HO00001092" data-film-ho-code="F000001467">
+                
+    <div class="page-header-banner smart-image preload-image" data-preload-target="background-image" data-image-url="//cuecinemas.com/CDN/media/entity/get/FilmBackdrop/h-HO00001092?width=1024&amp;referenceScheme=HeadOffice&amp;allowPlaceHolder=true&amp;fallbackMediaType=FilmTitleGraphic">
+        <img class="fallback-image preload-image" data-preload-target="src" data-image-url="//cuecinemas.com/CDN/media/entity/get/FilmBackdrop/h-HO00001092?width=1024&amp;referenceScheme=HeadOffice&amp;allowPlaceHolder=true&amp;fallbackMediaType=FilmTitleGraphic" />
+    </div>
+
+            </a>
+             <div class="play-bar">
+			    <button type="button" class="user-action trailer-button" data-href="//www.youtube.com/watch?v=hverb7siYJ8" data-movie-id="h-HO00001092" data-film-ho-code="F000001467"><span class="icon">Play Trailer</span></button>
+		    </div>
+</div>
+
+    </div>
+
+    <div class="page-header-boxout">
+        <div class="film-info">
+
+<div class="censor-rating">
+                    <img class="icon" src="//cuecinemas.com/CDN/media/entity/get/RatingIconGraphic/G?width=24&amp;height=24&amp;referenceScheme=Global&amp;allowPlaceHolder=true" />
+                </div>
+
+            <div class="film-header">
+                <h3 class="boxout-title">Dracula</h3>
+                            <div class="customer-rating">
+                <span class="average">10</span>/<span class="max">10</span> from 2 Users
+            </div>
+
+            </div>
+
+            <p class="boxout-blurb">When a 15th-century prince denounces God after the devastating loss of his wife, he inherits an eternal curse: he becomes Dracula. Condemned to wander the centuries, he defies fate and death itself, guided by a single hope - to be reunited with his lost love.</p>
+
+                        <div class="boxout-line">
+                <div class="boxout-line-item left">
+                    <label>Cast:</label>
+                    <span>
+Caleb Landry Jones, Christoph Waltz, Matilda De Angelis, Zo&#235; Bleu Sidel 
+                    </span>
+                </div>
+            </div>
+
+                        <div class="boxout-line">
+                <div class="boxout-line-item left">
+                    <label>Directors:</label>
+                    <span>
+Luc Besson 
+                    </span>
+                </div>
+            </div>
+
+            <div class="boxout-line film-info-item">
+                <div class="boxout-line-item">
+                    <label>Run Time:</label>
+                    <span>120 Minutes</span>
+                </div>
+                <div class="boxout-line-item">
+                    <label>Genre:</label>
+                    <span>Horror, Fantasy</span>
+                </div>
+            </div>
+                                </div>
+
+
+                <div class="film-rating" style="display: none;"
+             data-movie-id="h-HO00001092"
+             data-get-url="//cuecinemas.com/Browsing/Ratings/GetFilmRating/h-HO00001092"
+             data-submit-rating-url="//cuecinemas.com/Browsing/Ratings/SubmitFilmRating">
+
+            <div class="top-line">
+                <div>
+                        <div class="left">
+        <div class="trailer-rating"><div class="liked">You liked the trailer!</div><div class="disliked">You disliked the trailer!</div></div>
+                                                            <div class="your-rating">
+                                    <div class="rated">
+                                        <div><span class="score"></span><span class="max-score">/10</span></div>
+                                        <div>Your Rating</div>
+                                    </div>
+                                </div>
+                        </div>
+                        <div class="right">
+                                <div class="rating-stars">
+                                    <div>
+                                        <div class="heading">Rate this Movie</div>
+                                        <div class="rating-wrapper"></div>
+                                    </div>
+                                </div>
+                        </div>
+                                    </div>
+            </div>
+                <div class="bottom-line">        <div class="comment">
+            <div class="display"></div>
+            <div class="edit"><textarea placeholder="Your Comment"></textarea></div>
+            <div class="actions">
+                <div class="submit-rating">done</div>
+                <div class="edit-comment">edit</div>
+            </div>
+        </div>
+</div>
+
+            <div class="login-wrapper" style="display: none;">
+                <div class="form-wrapper">
+                    <h2>Sign In<em>Loyalty</em></h2>
+                    <p>To rate this movie or like the trailer you have to sign in.</p>
+
+<script type="text/javascript">
+    Vista.Lang.SignIn = {};
+    Vista.Lang.SignIn.LoyaltyGeneralSignInError = "There was an error signing in.";
+</script>
+
+
+<form action="/Browsing/Loyalty/SignInAsync/" class="loyalty-login" method="post">    <h3>CUE<em>Loyalty</em></h3>
+    <ul class="signin-errors">
+    </ul>
+    <ul>
+        <li>
+<input class="form-field" id="Email" name="Email" placeholder="Email" type="text" value="" />        </li>
+        <li>
+          <input class="form-field" id="Password" name="Password" placeholder="Password" type="password" />
+        </li>
+    </ul>
+    <div class="footer">
+            <a href="//cuecinemas.com/Browsing/Loyalty/ForgotPassword">Forgot Password?</a>
+        <span class="button-separator"></span>
+        <div class="right">
+                <a class="loyalty-register" href="//cuecinemas.com/Browsing/Loyalty/MembershipPrograms/1">Sign Up</a>
+            <span class="button-separator"></span>
+            <input type="submit" name="login" value="Sign In" />
+        </div>
+    </div>
+</form>
+                </div>
+            </div>
+        </div>
+
+    </div>
+    
+
+    <article id="show-times" class="has-attributes">
+            <div class="attributes-print">
+                
+
+    <div class="attributes-wrapper">
+        <div class="attributes-key">
+            <div class="attributes-list">
+                <div class="key">Key:</div>
+                    <div class="attribute FriNight">
+                        <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/Fri%20Night?referenceScheme=Global&amp;allowPlaceHolder=true" alt=".Friday Night"/>
+                        <span>.Friday Night</span>
+                    </div>
+                    <div class="attribute SCREEN2">
+                        <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%202?referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 2"/>
+                        <span>SCREEN 2</span>
+                    </div>
+                    <div class="attribute SCREEN3">
+                        <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%203?referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 3"/>
+                        <span>SCREEN 3</span>
+                    </div>
+                    <div class="attribute SCREEN6">
+                        <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%206?referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 6"/>
+                        <span>SCREEN 6</span>
+                    </div>
+                            </div>
+        </div>
+    </div>
+    <div style="clear: both;"></div>
+
+            </div>
+        <h2>
+            Dracula
+            <em>Show Times</em>
+        </h2>
+
+        
+
+            <div class="film-list">
+                    <div class="film-item last">
+                        <div class="film-showtimes">
+                            <div class="film-header">
+                                <a href="//cuecinemas.com/Browsing/Cinemas/Details/1001">
+                                    <h3 class="film-title">CUE Cinemas</h3>
+                                </a>
+
+                                    <button type="button" class="toggle-future-dates user-action">
+                                        <span class="icon up-arrow">Hide Future Dates</span>
+                                    </button>
+                                    <button type="button" class="toggle-future-dates user-action" style="display: none;">
+                                        <span class="icon down-arrow">Show Future Dates</span>
+                                    </button>
+                            </div>
+<div class=" session">
+                                                                                    <h4 class="session-date">Friday, 03 April 2026</h4>
+
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%206?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 6"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86520&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-03T17:45:00">05:45 PM</time>
+
+                </a>
+</div>
+                                    </div>
+<div class=" session">
+                                        
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%202?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 2"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86584&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-03T22:15:00">10:15 PM</time>
+
+                </a>
+</div>
+                                    </div>
+<div class=" session">
+                                        
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/Fri%20Night?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt=".Friday Night"/>
+        <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%203?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 3"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86588&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-04T01:30:00">01:30 AM</time>
+
+                </a>
+</div>
+                                    </div>
+<div class="future session">
+                                                                                    <h4 class="session-date">Saturday, 04 April 2026</h4>
+
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%206?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 6"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86623&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-04T12:15:00">12:15 PM</time>
+
+                </a>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86609&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-04T16:45:00">04:45 PM</time>
+
+                </a>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86617&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-04T18:45:00">06:45 PM</time>
+
+                </a>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86611&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-04T21:15:00">09:15 PM</time>
+
+                </a>
+</div>
+                                    </div>
+<div class="future session">
+                                        
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%203?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 3"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86599&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-04T19:25:00">07:25 PM</time>
+
+                </a>
+</div>
+                                    </div>
+<div class="future session">
+                                                                                    <h4 class="session-date">Sunday, 05 April 2026</h4>
+
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%206?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 6"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86635&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-05T12:20:00">12:20 PM</time>
+
+                </a>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86642&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-05T16:45:00">04:45 PM</time>
+
+                </a>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86632&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-05T18:50:00">06:50 PM</time>
+
+                </a>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86644&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-05T21:15:00">09:15 PM</time>
+
+                </a>
+</div>
+                                    </div>
+<div class="future session">
+                                        
+
+
+
+
+<div class="session-times">
+        <div class="session-attributes-list">    
+                <img src="//cuecinemas.com/CDN/media/entity/get/AttributeIconGraphic/SCREEN%203?height=16&amp;referenceScheme=Global&amp;allowPlaceHolder=true" alt="SCREEN 3"/>
+
+        </div>
+                <a href="//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode=1001&amp;txtSessionId=86659&amp;visLang=1" class="session-time ">
+                        <time datetime="2026-04-05T19:25:00">07:25 PM</time>
+
+                </a>
+</div>
+                                    </div>
+
+                        </div>
+                    </div>
+            </div>
+    </article>
+</div>
+<div id="trailer-rating-template" style="display: none;">
+    <div class="rate"><span class="thumbs-up"></span><span class="thumbs-down"></span></div>
+    <div class="rate-text">Did you like this trailer?</div>
+    <div class="login-wrapper" style="display: none;">
+        <div class="form-wrapper">
+            <h2>Sign In<em>Loyalty</em></h2>
+            
+            <p>To Rate this trailer you need to sign in first.</p>
+
+<script type="text/javascript">
+    Vista.Lang.SignIn = {};
+    Vista.Lang.SignIn.LoyaltyGeneralSignInError = "There was an error signing in.";
+</script>
+
+
+<form action="/Browsing/Loyalty/SignInAsync/" class="loyalty-login" method="post">    <h3>CUE<em>Loyalty</em></h3>
+    <ul class="signin-errors">
+    </ul>
+    <ul>
+        <li>
+<input class="form-field" id="Email" name="Email" placeholder="Email" type="text" value="" />        </li>
+        <li>
+          <input class="form-field" id="Password" name="Password" placeholder="Password" type="password" />
+        </li>
+    </ul>
+    <div class="footer">
+            <a href="//cuecinemas.com/Browsing/Loyalty/ForgotPassword">Forgot Password?</a>
+        <span class="button-separator"></span>
+        <div class="right">
+                <a class="loyalty-register" href="//cuecinemas.com/Browsing/Loyalty/MembershipPrograms/1">Sign Up</a>
+            <span class="button-separator"></span>
+            <input type="submit" name="login" value="Sign In" />
+        </div>
+    </div>
+</form>
+        </div>
+    </div>
+</div>
+
+<script src="https://www.youtube.com/iframe_api"></script>
+<div id="trailer-player-template" style="display: none;">
+    <div>        
+        <div class="player-container">
+            <div class="player"></div>
+            <div class="playback-controls">
+                <embed class="polyv" allowfullscreen="true" allowscriptaccess="always" flashvars="vid=02bfeb00e2ba940698c54cdf517aa9b6_0" height="390" width="640" name="" src="http://player.polyv.net/videos/player.swf?autoplay=true" type="application/x-shockwave-flash" wmode="Transparent">                 
+                <div>
+                    <button class="play-button play"></button>
+                    <div class="slider-container"><div class="slider"></div></div>
+                </div>
+            </div>
+            <div class ="overlay"></div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+        </article>
+    </section>
+
+    <footer>
+
+<section id="footer">
+    <div id="footer-inner">
+        <div class="col-3">
+            <div class="col col-left">
+                <div class="col-inner">
+                    <a href="//cuecinemas.com/Browsing/">Home</a>
+                </div>
+                <div class="col-inner">
+                    <a href="//cuecinemas.com/Browsing/Movies/NowShowing">Now Showing</a>
+                </div>
+                <div class="col-inner">
+                    <a href="//cuecinemas.com/Browsing/Movies/ComingSoon">Coming Soon</a>
+                </div>
+            </div>
+            <div class="col col-middle">
+                <div class="col-inner">
+                    <a href="//cuecinemas.com/Browsing/Cinemas">Cinemas</a>
+                </div>
+                    <div class="col-inner">
+                        <a href="//cuecinemas.com/Browsing/EventsAndExperiences">Events &amp; Experiences</a>
+                    </div>
+                                         <div class="col-inner">
+                            <a href="//cuecinemas.com/Browsing/Loyalty/Clubs">Loyalty</a> 
+                        </div>
+            </div>
+            <div class="col col-right">
+                    <div class="col-inner">
+                        <a href="//cuecinemas.com/Ticketing/visShop.aspx?visLang=1">Gift Ideas</a>
+                    </div>
+                                <div class="col-inner">
+                    <a href="//cuecinemas.com/Browsing/General/Ratings">Ratings</a>
+                </div>
+                <div class="col-inner">
+                    <a href="//cuecinemas.com/Browsing/General/GeneralEnquiries">Contact Us</a>
+                </div>
+            </div>
+        </div>
+        <div id="terms-conditions">
+            <div class="link terms">
+                <a href="//cuecinemas.com/Browsing/General/TermsAndConditions">
+                    Terms and Conditions
+                </a>
+            </div>
+            <div class="spacer">&nbsp;</div>
+            <div class="link privacy">
+                <a href="//cuecinemas.com/Browsing/General/Privacy">
+                    Privacy
+                </a>
+            </div>
+            <div class="copyright">
+                UBL Our Payment Partner
+            </div>
+        </div>
+    </div>
+</section>
+    </footer>
+
+
+
+    <script src="//cuecinemas.com/IT-CDN/JsBundle/JQueryCommon?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Culture/globalize.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Culture/Cultures/globalize.culture.en-US.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script type="text/javascript">
+            Globalize.culture('en-US');
+            var currentCulture = Globalize.culture();
+            currentCulture.numberFormat.currency.symbol = 'Rs.';
+            currentCulture.numberFormat.currency.decimalSeparator = '.';
+            currentCulture.numberFormat.currency.decimalDigits = 2;
+            currentCulture.numberFormat.currency.groupSeparator = ',';
+
+            Vista.Urls.Shared = {};
+            Vista.Urls.Shared.Home = '//cuecinemas.com/Browsing/';
+            Vista.Urls.CDN = {};
+            Vista.Urls.CDN.GetImageData = '//cuecinemas.com/CDN/ImageAPI/GetGalleryImageData?galleryName={0}&folderName={1}&preferredWidth={2}&preferredHeight={3}';
+            Vista.Urls.CDN.GalleryImage = '//cuecinemas.com/CDN/Image/GalleryImage?galleryName={0}&id={1}&fileName={2}&width={3}&height={4}';
+            Vista.Urls.Ads = {};
+            Vista.Urls.Ads.GetAdData = '//cuecinemas.com/IT-CDN/ImageAPI/Advertisement?pageName={0}&sectionName={1}';
+            Vista.Urls.Movies = {};
+            Vista.Urls.Movies.GetMovieFutureSessions = '/Browsing/Movies/GetMovieFutureSessions';
+
+
+            Vista.Lang.Shared = {};
+            Vista.Lang.Shared.OverflowPlaceholder = "... [{0} more]";
+
+            
+            Vista.Lang.ModalError = {};
+            Vista.Lang.ModalError.Title = "Whoops!";
+            Vista.Lang.ModalError.OkButton = "OK";
+
+            Vista.Lang.Address = {};
+            Vista.Lang.Address.NoResult = "No results found";
+            Vista.Lang.Address.ErrorSearch = "There was an error retrieving results";
+
+            Vista.Lang.DiscountTickets = "Discount Tickets";
+    </script>
+
+    <script src="//cuecinemas.com/IT-CDN/JsBundle/MasterPageMvc?v=500.317.0.21" type="text/javascript"></script>
+    <!--[if IE 6]>
+        <script src="//cuecinemas.com/IT-CDN/Scripts/Navigation/IE6.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <![endif]-->
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Navigation/Index.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Navigation/LanguageLocation.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/JsBundle/Scrollbox?v=500.317.0.21" type="text/javascript"></script>
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Collapsible.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/ModalError.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/JsBundle/ImageGallery?v=500.317.0.21" type="text/javascript"></script>
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Layout.js?v=500.317.0.21" type="text/javascript"></script>
+
+
+    
+    <script type="text/javascript">
+        Vista.Urls.Loyalty = {};
+        Vista.Urls.Loyalty.SendFacebookLikeFeedback = '/Browsing/Loyalty/SendMovieFacebookLikeFeedback';
+        Vista.Urls.Loyalty.SendTwitterTweetFeedback = '/Browsing/Loyalty/SendMovieTwitterTweetFeedback';
+        Vista.Urls.Loyalty.SubmitFilmTrailerRating = '//cuecinemas.com/Browsing/Ratings/SubmitFilmTrailerRating';
+    </script>
+
+    <script src="//cuecinemas.com/IT-CDN/JsBundle/Validation?v=500.317.0.21" type="text/javascript"></script>
+    <script src="//cuecinemas.com/IT-CDN/Scripts/jquery-ui-1.8.23.min.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Trailers/Trailers.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Utilities/StarRating.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Loyalty/AjaxifyLoyaltySignup.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Loyalty/LoyaltyTrailerRate.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Movies/MovieDetails.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/ShowHideDates.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/SocialMedia/FacebookJavascriptSDK.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/SocialMedia/TwitterWidgets.js?v=500.317.0.21" type="text/javascript"></script>
+
+    <script src="//cuecinemas.com/IT-CDN/Scripts/Vista/Loyalty/MemberMovieFeedback.js?v=500.317.0.21" type="text/javascript"></script>
+
+
+
+
+<script type="text/javascript">
+    Vista.Urls.QuickTickets = {};
+    Vista.Urls.QuickTickets.Movies = '/Browsing/QuickTickets/Movies';
+    Vista.Urls.QuickTickets.Cinemas = '/Browsing/QuickTickets/Cinemas';
+    Vista.Urls.QuickTickets.ShowTypes = '/Browsing/QuickTickets/Types';
+    Vista.Urls.QuickTickets.Times = '/Browsing/QuickTickets/Sessions';
+    Vista.Urls.QuickTickets.MovieImages = '//cuecinemas.com/CDN/Image/Entity/FilmPosterGraphic/{0}?width=85&height=105';
+    Vista.Urls.QuickTickets.Ticket = '//cuecinemas.com/Ticketing/visSelectTickets.aspx?cinemacode={0}&txtSessionId={1}&visLang=1';
+    Vista.Urls.QuickTickets.Compare = '/Browsing/QuickTickets/Compare';
+
+    Vista.Lang.QuickTickets = {};
+    Vista.Lang.QuickTickets.Movies = "Movies";
+    Vista.Lang.QuickTickets.MovieNext = "Pick A Movie";
+    Vista.Lang.QuickTickets.MovieAny = "All Movies";
+
+    Vista.Lang.QuickTickets.Cinemas = "Cinemas";
+    Vista.Lang.QuickTickets.CinemaNext = "Pick A Cinema";
+    Vista.Lang.QuickTickets.CinemaAny = "All Locations";
+
+    Vista.Lang.QuickTickets.ShowTypes = "Show Types";
+    Vista.Lang.QuickTickets.ShowTypeNext = "Pick A Show Type";
+    Vista.Lang.QuickTickets.ShowTypeAny = "All Show Types";
+
+    Vista.Lang.QuickTickets.Times = "Times";
+    Vista.Lang.QuickTickets.TimeNext = "Pick A Time";
+    Vista.Lang.QuickTickets.TimeAny = "Any Time";
+    Vista.Lang.QuickTickets.TimeDay = "Day Time (Before 5pm)";
+    Vista.Lang.QuickTickets.TimeEvening = "Evening (After 5pm)";
+    Vista.Lang.QuickTickets.TimeLabel = "Starting Between";
+
+    Vista.Lang.QuickTickets.NoSessions = "No sessions for {0}. Pick a different day.";
+    Vista.Lang.QuickTickets.SoldOutSessions = "Sessions for {0} have sold out. Pick a different day.";
+    Vista.Lang.QuickTickets.BookNow = "Book Tickets";
+    Vista.Lang.QuickTickets.Compare = "Show Times";
+    Vista.Lang.QuickTickets.Today = "Today";
+
+    Vista.Formatting = {};
+    Vista.Formatting.TimeFormat = "hh:mm tt";
+</script>
+
+
+    <script src="//cuecinemas.com/IT-CDN/JsBundle/QuickTickets?v=500.317.0.21" type="text/javascript"></script>
+
+    
+    
+    
+
+
+
+
+</body>
+</html>
+
