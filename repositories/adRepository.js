@@ -15,19 +15,15 @@ async function listAds({ status, screen, createdAtOrder = 'DESC' } = {}) {
 
   if (screen) {
     // Treat null/blank screen_targets as "all screens".
-    // When targets are present, match whole tokens in the comma-separated list
-    // (avoid substring matches like "cinema" matching "cinema-portrait").
-    console.log('API screen:', normalizedScreen);
+    // When targets are present, match exact comma-delimited tokens only.
     const targetsExpr = "LOWER(REPLACE(COALESCE(screen_targets, ''), ' ', ''))";
+    const commaWrappedTargets = `(',' || ${targetsExpr} || ',')`;
+    const commaWrappedScreen = `(',' || ? || ',')`;
+
     whereClauses.push(
-      `(${targetsExpr} = '' OR ${targetsExpr} = ? OR ${targetsExpr} LIKE ? OR ${targetsExpr} LIKE ? OR ${targetsExpr} LIKE ?)`
+      `(${targetsExpr} = '' OR INSTR(${commaWrappedTargets}, ${commaWrappedScreen}) > 0)`
     );
-    params.push(
-      normalizedScreen,
-      `${normalizedScreen},%`,
-      `%,${normalizedScreen},%`,
-      `%,${normalizedScreen}`
-    );
+    params.push(normalizedScreen);
   }
 
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
@@ -41,9 +37,6 @@ async function listAds({ status, screen, createdAtOrder = 'DESC' } = {}) {
   `;
 
   const rows = await all(sql, params);
-  if (screen) {
-    console.log('DB result:', rows);
-  }
   return rows;
 }
 

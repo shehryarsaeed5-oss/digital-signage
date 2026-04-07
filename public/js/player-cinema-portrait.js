@@ -1,7 +1,8 @@
 console.log("PORTRAIT PLAYER VERSION 2 LOADED");
 
 const ROTATION_INTERVAL_MS = 8000;
-const REFRESH_INTERVAL_MS = 60000;
+const REFRESH_INTERVAL_MS = 15000;
+const GLOBAL_REFRESH_CHECK_INTERVAL_MS = 5000;
 const MAX_VISIBLE_SHOWTIMES = 4;
 
 const state = {
@@ -20,7 +21,9 @@ const state = {
   visibleSlot: 0,
   rotationTimer: null,
   refreshTimer: null,
+  refreshSignalTimer: null,
   initialized: false,
+  lastRefreshToken: null,
 };
 
 const slideNodes = [
@@ -575,6 +578,30 @@ function applyPlayerSettings(settings) {
   };
 }
 
+async function pollGlobalRefreshToken() {
+  try {
+    const response = await fetch('/api/player-settings/refresh-token', { cache: 'no-store' });
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json();
+    const refreshToken = String(payload?.refreshToken || '');
+
+    if (state.lastRefreshToken === null) {
+      state.lastRefreshToken = refreshToken;
+      return;
+    }
+
+    if (refreshToken !== state.lastRefreshToken) {
+      window.location.reload();
+      return;
+    }
+  } catch (error) {
+    console.warn('Failed to check refresh token', error);
+  }
+}
+
 function applyAppearanceSettings(settings) {
   if (!settings) return;
 
@@ -634,3 +661,5 @@ async function fetchMovies() {
 
 fetchMovies();
 state.refreshTimer = window.setInterval(fetchMovies, REFRESH_INTERVAL_MS);
+void pollGlobalRefreshToken();
+state.refreshSignalTimer = window.setInterval(pollGlobalRefreshToken, GLOBAL_REFRESH_CHECK_INTERVAL_MS);

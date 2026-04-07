@@ -7,6 +7,7 @@
   --wall-gap: 30px;
   --wall-padding: 30px;
   --cinema-3x2-poster-width: 40%;
+  --cinema-3x2-row-scale: 1;
 }
 
 html,
@@ -122,7 +123,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  padding: 40px;
+  padding: calc(40px * var(--cinema-3x2-row-scale));
   min-width: 0;
   height: 100%;
   background: linear-gradient(90deg, #05070a 0%, #0d121a 100%);
@@ -131,7 +132,7 @@ body {
 .cinema-card-top {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: calc(16px * var(--cinema-3x2-row-scale));
 }
 
 .cinema-card-title {
@@ -163,12 +164,12 @@ body {
 .cinema-showtimes-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
+  gap: calc(18px * var(--cinema-3x2-row-scale));
   justify-content: flex-start;
 }
 
 .cinema-time-pill {
-  min-height: 56px;
+  min-height: calc(56px * var(--cinema-3x2-row-scale));
   min-width: 104px;
   padding: 0 24px;
   border-radius: 8px;
@@ -192,7 +193,7 @@ body {
 .cinema-release-info {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: calc(14px * var(--cinema-3x2-row-scale));
 }
 
 .cinema-release-label {

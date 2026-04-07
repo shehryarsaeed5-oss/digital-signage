@@ -3,6 +3,7 @@ const { listAds, createAd, updateAd, deleteAd, getAdById } = require('../reposit
 const {
   getPlayerSettings,
   SCREEN_PLAYER_SETTING_DEFAULTS,
+  getGlobalRefreshToken,
   getScreenPlayerSettings,
   listScreenPlayerSettings,
   normalizeScreenName,
@@ -120,6 +121,17 @@ exports.playerSettings = async (req, res, next) => {
         defaults: SCREEN_PLAYER_SETTING_DEFAULTS,
         settings,
       },
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.playerSettingsRefreshToken = async (req, res, next) => {
+  try {
+    const refreshToken = await getGlobalRefreshToken();
+    res.json({
+      refreshToken: refreshToken || '',
     });
   } catch (error) {
     next(error);

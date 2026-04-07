@@ -1,5 +1,9 @@
+const REFRESH_INTERVAL_MS = 15000;
+const GLOBAL_REFRESH_CHECK_INTERVAL_MS = 5000;
+
 const state = {
   refreshTimer: null,
+  refreshSignalTimer: null,
   hasRenderedData: false,
   moviePlaylistItems: [],
   adItems: [],
@@ -21,6 +25,7 @@ const state = {
     enable_ads: true,
     ad_frequency_movies: 2,
   },
+  lastRefreshToken: null,
 };
 
 const SLOT_CONFIG = [
@@ -364,6 +369,12 @@ function applyPlayerSettings(settings) {
   root.style.setProperty(
     '--cinema-wall-poster-width',
     `${Number.isFinite(posterWidthValue) ? posterWidthValue : 38}%`
+  );
+
+  const rowHeightValue = Number(settings?.row_height_percent);
+  root.style.setProperty(
+    '--cinema-wall-row-scale',
+    `${Number.isFinite(rowHeightValue) ? rowHeightValue / 100 : 1}`
   );
 }
 
@@ -905,6 +916,30 @@ function updateClock() {
   });
 }
 
+async function pollGlobalRefreshToken() {
+  try {
+    const response = await fetch('/api/player-settings/refresh-token', { cache: 'no-store' });
+    if (!response.ok) {
+      return;
+    }
+
+    const payload = await response.json();
+    const refreshToken = String(payload?.refreshToken || '');
+
+    if (state.lastRefreshToken === null) {
+      state.lastRefreshToken = refreshToken;
+      return;
+    }
+
+    if (refreshToken !== state.lastRefreshToken) {
+      window.location.reload();
+      return;
+    }
+  } catch (error) {
+    console.warn('Failed to check refresh token', error);
+  }
+}
+
 async function fetchCinemaMovies() {
   try {
     const screen = detectPlayerScreen();
@@ -949,4 +984,6 @@ async function fetchCinemaMovies() {
 updateClock();
 window.setInterval(updateClock, 30000);
 fetchCinemaMovies();
-state.refreshTimer = window.setInterval(fetchCinemaMovies, 60000);
+state.refreshTimer = window.setInterval(fetchCinemaMovies, REFRESH_INTERVAL_MS);
+void pollGlobalRefreshToken();
+state.refreshSignalTimer = window.setInterval(pollGlobalRefreshToken, GLOBAL_REFRESH_CHECK_INTERVAL_MS);

@@ -1,5 +1,5 @@
 <%- include('partials/layout-start', { pageTitle: 'Ads Manager' }) %>
-  <header class="page-header">
+<header class="page-header">
     <div class="page-header-copy">
       <h1>Ads Manager</h1>
       <p class="muted">Manage uploaded ads, review type and order, compress MP4 files for signage playback, and control whether each ad is active.</p>
@@ -10,24 +10,21 @@
     </div>
   </header>
 
+<%
+const formatScreenTarget = (value) => {
+  const normalized = String(value || '').trim();
+  if (!normalized) return 'All Screens';
+  if (normalized === 'cinema') return 'Cinema';
+  if (normalized === 'cinema-3x2') return 'Cinema 3x2';
+  if (normalized === 'cinema-portrait') return 'Cinema Portrait';
+  return normalized;
+};
+%>
+
   <style>
-    .ads-list {
-      display: grid;
-      gap: 20px;
-    }
-
-    .ad-card {
-      display: grid;
-      grid-template-columns: 260px minmax(0, 1fr);
-      gap: 20px;
-      align-items: start;
-      padding: 20px;
-      border: 1px solid rgba(255, 255, 255, 0.08);
-      background: rgba(255, 255, 255, 0.02);
-    }
-
     .ad-preview-shell {
-      width: 100%;
+      width: 180px;
+      max-width: 100%;
       aspect-ratio: 16 / 9;
       overflow: hidden;
       background: #0a0f19;
@@ -54,23 +51,6 @@
       background: linear-gradient(180deg, #111827 0%, #05070a 100%);
       padding: 20px;
       box-sizing: border-box;
-    }
-
-    .ad-card-body {
-      display: grid;
-      gap: 18px;
-      min-width: 0;
-    }
-
-    .ad-card-header {
-      display: flex;
-      justify-content: space-between;
-      gap: 16px;
-      align-items: flex-start;
-    }
-
-    .ad-card-header h2 {
-      margin: 0 0 6px;
     }
 
     .ad-status-badge,
@@ -114,6 +94,135 @@
       border: 1px solid rgba(252, 165, 165, 0.28);
     }
 
+    .ads-table-wrap {
+      overflow-x: auto;
+    }
+
+    .ads-table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 1120px;
+    }
+
+    .ads-table th,
+    .ads-table td {
+      padding: 14px 12px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+      vertical-align: top;
+      text-align: left;
+    }
+
+    .ads-table th {
+      color: #cbd5e1;
+      font-size: 12px;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    .ads-table tbody tr:hover {
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .ads-table .preview-cell {
+      width: 200px;
+    }
+
+    .ads-table .title-cell h2 {
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .ads-table .title-cell .muted {
+      margin: 0;
+    }
+
+    .ads-table .stacked-meta {
+      display: grid;
+      gap: 6px;
+      min-width: 0;
+    }
+
+    .ads-table .stacked-meta strong {
+      color: #e2e8f0;
+    }
+
+    .ads-table .screen-targets {
+      display: inline-flex;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .ads-table .screen-target-pill {
+      display: inline-flex;
+      align-items: center;
+      min-height: 26px;
+      padding: 0 10px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.06);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .ads-table .actions-cell,
+    .ads-table .sort-cell,
+    .ads-table .status-cell {
+      white-space: nowrap;
+    }
+
+    .ads-table .actions-cell {
+      min-width: 220px;
+    }
+
+    .ads-table .main-actions,
+    .ads-table .secondary-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .ads-table .secondary-actions {
+      margin-top: 8px;
+    }
+
+    .ads-table .details-row td {
+      padding-top: 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .ads-table .details-row .details-panel {
+      border-top: 0;
+      margin-top: -1px;
+    }
+
+    .ads-table .details-panel {
+      margin: 0 0 16px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(5, 7, 10, 0.38);
+      display: grid;
+      gap: 10px;
+    }
+
+    .ads-table .details-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px 16px;
+    }
+
+    .ads-table .details-block {
+      display: grid;
+      gap: 4px;
+      min-width: 0;
+    }
+
+    .ads-table .details-block p {
+      margin: 0;
+    }
+
     .ad-meta-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -148,7 +257,8 @@
     .path-text,
     .status-detail-text {
       font-family: Consolas, "Courier New", monospace;
-      word-break: break-all;
+      word-break: break-word;
+      overflow-wrap: anywhere;
       font-size: 12px;
     }
 
@@ -246,8 +356,8 @@
     }
 
     @media (max-width: 1100px) {
-      .ad-card {
-        grid-template-columns: 1fr;
+      .ads-table {
+        min-width: 0;
       }
 
       .ad-meta-grid,
@@ -284,27 +394,40 @@
       <% if (ads.length === 0) { %>
         <p class="empty-state">No ads uploaded yet.</p>
       <% } else { %>
-        <div class="ads-list">
-          <% ads.forEach((ad) => { %>
-            <article class="ad-card">
-              <div class="ad-preview-shell">
-                <% if (ad.type === 'image') { %>
-                  <img
-                    src="<%= ad.file_path %>"
-                    alt="<%= ad.title %>"
-                    class="ad-preview-image"
-                  >
-                <% } else { %>
-                  <div class="ad-video-label">
-                    <strong>Video Ad</strong>
-                    <span><%= ad.file_path.split('/').pop() %></span>
-                  </div>
-                <% } %>
-              </div>
-
-              <div class="ad-card-body">
-                <div class="ad-card-header">
-                  <div>
+        <div class="ads-table-wrap">
+          <table class="ads-table">
+            <thead>
+              <tr>
+                <th scope="col">Preview</th>
+                <th scope="col">Title</th>
+                <th scope="col">Type</th>
+                <th scope="col">Screen Targets</th>
+                <th scope="col">Status</th>
+                <th scope="col">Sort Order</th>
+                <th scope="col">Created</th>
+                <th scope="col">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              <% ads.forEach((ad) => { %>
+                <tr>
+                  <td class="preview-cell">
+                    <div class="ad-preview-shell">
+                      <% if (ad.type === 'image') { %>
+                        <img
+                          src="<%= ad.file_path %>"
+                          alt="<%= ad.title %>"
+                          class="ad-preview-image"
+                        >
+                      <% } else { %>
+                        <div class="ad-video-label">
+                          <strong>Video Ad</strong>
+                          <span><%= ad.file_path.split('/').pop() %></span>
+                        </div>
+                      <% } %>
+                    </div>
+                  </td>
+                  <td class="title-cell">
                     <h2><%= ad.title %></h2>
                     <p class="muted">
                       <%= ad.type === 'image' ? 'Image' : 'Video' %>
@@ -314,118 +437,128 @@
                         · plays until end
                       <% } %>
                     </p>
-                  </div>
-                  <span class="ad-status-badge <%= ad.status === 'active' ? 'is-active' : 'is-inactive' %>">
-                    <%= ad.status %>
-                  </span>
-                </div>
-
-                <div class="ad-meta-grid">
-                  <div class="ad-meta-block">
-                    <form method="post" action="/admin/ads/<%= ad.id %>/sort" class="ad-sort-form">
-                      <label>
-                        <span><strong>Sort Order</strong></span>
-                        <div class="ad-sort-inputs">
-                          <input type="number" name="sort_order" step="1" value="<%= ad.sort_order %>">
-                          <button type="submit" class="secondary">Save</button>
-                        </div>
-                      </label>
-                    </form>
-                  </div>
-                  <div class="ad-meta-block">
-                    <p><strong>Created:</strong> <%= ad.created_at %></p>
-                    <p><strong>File Type:</strong> <%= ad.type %></p>
-                  </div>
-                  <div class="ad-meta-block">
-                    <p><strong>Screen Targets:</strong></p>
-                    <div class="status-detail-text">
-                      <% if (ad.screen_targets) { %>
-                        <%= ad.screen_targets.split(',').map(s => s.trim()).join(', ') %>
+                  </td>
+                  <td><%= ad.type %></td>
+                  <td>
+                    <div class="screen-targets">
+                      <% if (ad.screen_targets && ad.screen_targets.trim()) { %>
+                        <% ad.screen_targets.split(',').map(s => s.trim()).filter(Boolean).forEach((target) => { %>
+                          <span class="screen-target-pill"><%= formatScreenTarget(target) %></span>
+                        <% }); %>
                       <% } else { %>
-                        All Screens
+                        <span class="screen-target-pill">All Screens</span>
                       <% } %>
                     </div>
-                  </div>
-                  <div class="ad-meta-block">
-                    <p><strong>Original File:</strong></p>
-                    <div class="path-text"><%= ad.file_path %></div>
-                    <% if (ad.original_size_label) { %>
-                      <p class="muted">Size: <%= ad.original_size_label %></p>
-                    <% } %>
-                  </div>
-                  <div class="ad-meta-block">
-                    <p><strong>Optimized File:</strong></p>
-                    <div class="path-text"><%= ad.optimized_file_path || 'Not generated yet' %></div>
-                    <% if (ad.optimized_size_label) { %>
-                      <p class="muted">Size: <%= ad.optimized_size_label %></p>
-                    <% } %>
-                  </div>
-                </div>
-
-                <% if (ad.type === 'video') { %>
-                  <section class="compression-panel">
-                    <div class="compression-panel-header">
-                      <div>
-                        <h3>Compress For Signage</h3>
-                        <p class="muted" style="margin: 4px 0 0;">FFmpeg profile: <code>libx264</code>, <code>aac</code>, <code>+faststart</code>, preset <code>slow</code>, CRF <code>20</code>.</p>
+                  </td>
+                  <td class="status-cell">
+                    <span class="ad-status-badge <%= ad.status === 'active' ? 'is-active' : 'is-inactive' %>">
+                      <%= ad.status %>
+                    </span>
+                  </td>
+                  <td class="sort-cell">
+                    <form method="post" action="/admin/ads/<%= ad.id %>/sort" class="ad-sort-form">
+                      <div class="ad-sort-inputs">
+                        <input type="number" name="sort_order" step="1" value="<%= ad.sort_order %>">
+                        <button type="submit" class="secondary">Save</button>
                       </div>
-                      <span class="compression-status-badge is-<%= ad.optimized_status %>"><%= ad.optimized_status %></span>
-                    </div>
-
-                    <div class="compression-grid">
-                      <div class="ad-meta-block">
-                        <p><strong>Source Status</strong></p>
-                        <p class="status-detail-text"><%= ad.original_file_exists ? 'available' : 'missing' %></p>
-                      </div>
-                      <div class="ad-meta-block">
-                        <p><strong>Optimized Status</strong></p>
-                        <p class="status-detail-text"><%= ad.optimized_file_exists ? 'available' : 'not available' %></p>
-                      </div>
-                      <div class="ad-meta-block">
-                        <p><strong>Started</strong></p>
-                        <p class="status-detail-text"><%= ad.optimized_started_at || '—' %></p>
-                      </div>
-                      <div class="ad-meta-block">
-                        <p><strong>Completed</strong></p>
-                        <p class="status-detail-text"><%= ad.optimized_completed_at || '—' %></p>
-                      </div>
-                    </div>
-
-                    <% if (ad.optimized_error) { %>
-                      <div class="alert error" style="margin: 0;">
-                        <strong>Compression Error:</strong>
-                        <div class="status-detail-text"><%= ad.optimized_error %></div>
-                      </div>
-                    <% } %>
-
-                    <div class="compression-actions">
-                      <form method="post" action="/admin/ads/<%= ad.id %>/compress" class="inline-form">
-                        <button type="submit" <%= !ad.original_file_exists || ad.optimized_status === 'processing' ? 'disabled' : '' %>>
-                          Compress For Signage
+                    </form>
+                  </td>
+                  <td><%= ad.created_at %></td>
+                  <td class="actions-cell">
+                    <div class="main-actions">
+                      <a class="secondary-link" href="/admin/ads/edit/<%= ad.id %>">Edit</a>
+                      <form method="post" action="/admin/ads/<%= ad.id %>/toggle" class="inline-form">
+                        <button type="submit" class="<%= ad.status === 'active' ? 'secondary' : '' %>">
+                          <%= ad.status === 'active' ? 'Deactivate' : 'Activate' %>
                         </button>
                       </form>
-                      <form method="post" action="/admin/ads/<%= ad.id %>/import-optimized" class="inline-form">
-                        <button type="submit" class="secondary" <%= ad.optimized_status !== 'completed' || !ad.optimized_file_exists ? 'disabled' : '' %>>
-                          Import Optimized As Ad
-                        </button>
+                      <form method="post" action="/admin/ads/<%= ad.id %>/delete" class="inline-form" onsubmit="return confirm('Delete this ad?');">
+                        <button type="submit" class="danger-button">Delete</button>
                       </form>
                     </div>
-                  </section>
-                <% } %>
+                  </td>
+                </tr>
 
-                <div class="ad-actions">
-                  <form method="post" action="/admin/ads/<%= ad.id %>/toggle">
-                    <button type="submit" class="<%= ad.status === 'active' ? 'secondary' : '' %>">
-                      <%= ad.status === 'active' ? 'Deactivate' : 'Activate' %>
-                    </button>
-                  </form>
-                  <form method="post" action="/admin/ads/<%= ad.id %>/delete" onsubmit="return confirm('Delete this ad?');">
-                    <button type="submit" class="danger-button">Delete</button>
-                  </form>
-                </div>
-              </div>
-            </article>
-          <% }); %>
+                <tr class="details-row">
+                  <td colspan="8">
+                    <div class="details-panel">
+                      <div class="details-grid">
+                        <div class="details-block">
+                          <p><strong>Original File</strong></p>
+                          <div class="path-text"><%= ad.file_path %></div>
+                          <% if (ad.original_size_label) { %>
+                            <p class="muted">Size: <%= ad.original_size_label %></p>
+                          <% } %>
+                        </div>
+                        <div class="details-block">
+                          <p><strong>Optimized File</strong></p>
+                          <div class="path-text"><%= ad.optimized_file_path || 'Not generated yet' %></div>
+                          <% if (ad.optimized_size_label) { %>
+                            <p class="muted">Size: <%= ad.optimized_size_label %></p>
+                          <% } %>
+                        </div>
+                        <div class="details-block">
+                          <p><strong>Optimized Status</strong></p>
+                          <span class="compression-status-badge is-<%= ad.optimized_status %>" style="width: fit-content;"><%= ad.optimized_status %></span>
+                        </div>
+                      </div>
+
+                      <% if (ad.type === 'video') { %>
+                        <div class="compression-panel">
+                          <div class="compression-panel-header">
+                            <div>
+                              <h3>Compress For Signage</h3>
+                              <p class="muted" style="margin: 4px 0 0;">FFmpeg profile: <code>libx264</code>, <code>aac</code>, <code>+faststart</code>, preset <code>slow</code>, CRF <code>20</code>.</p>
+                            </div>
+                            <span class="compression-status-badge is-<%= ad.optimized_status %>"><%= ad.optimized_status %></span>
+                          </div>
+
+                          <div class="compression-grid">
+                            <div class="ad-meta-block">
+                              <p><strong>Source Status</strong></p>
+                              <p class="status-detail-text"><%= ad.original_file_exists ? 'available' : 'missing' %></p>
+                            </div>
+                            <div class="ad-meta-block">
+                              <p><strong>Optimized Status</strong></p>
+                              <p class="status-detail-text"><%= ad.optimized_file_exists ? 'available' : 'not available' %></p>
+                            </div>
+                            <div class="ad-meta-block">
+                              <p><strong>Started</strong></p>
+                              <p class="status-detail-text"><%= ad.optimized_started_at || '—' %></p>
+                            </div>
+                            <div class="ad-meta-block">
+                              <p><strong>Completed</strong></p>
+                              <p class="status-detail-text"><%= ad.optimized_completed_at || '—' %></p>
+                            </div>
+                          </div>
+
+                          <% if (ad.optimized_error) { %>
+                            <div class="alert error" style="margin: 0;">
+                              <strong>Compression Error:</strong>
+                              <div class="status-detail-text"><%= ad.optimized_error %></div>
+                            </div>
+                          <% } %>
+
+                          <div class="compression-actions">
+                            <form method="post" action="/admin/ads/<%= ad.id %>/compress" class="inline-form">
+                              <button type="submit" <%= !ad.original_file_exists || ad.optimized_status === 'processing' ? 'disabled' : '' %>>
+                                Compress For Signage
+                              </button>
+                            </form>
+                            <form method="post" action="/admin/ads/<%= ad.id %>/import-optimized" class="inline-form">
+                              <button type="submit" class="secondary" <%= ad.optimized_status !== 'completed' || !ad.optimized_file_exists ? 'disabled' : '' %>>
+                                Import Optimized As Ad
+                              </button>
+                            </form>
+                          </div>
+                        </div>
+                      <% } %>
+                    </div>
+                  </td>
+                </tr>
+              <% }); %>
+            </tbody>
+          </table>
         </div>
       <% } %>
 
@@ -438,7 +571,7 @@
             </div>
           </div>
 
-          <% if (scannedFiles.length === 0) { %>
+          <% if (!scannedFiles || scannedFiles.length === 0) { %>
             <p class="empty-state">No supported files found in the ads folder.</p>
           <% } else { %>
             <div class="scan-files-list">

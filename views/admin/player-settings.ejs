@@ -4,6 +4,11 @@
     <h1>Player Settings</h1>
     <p class="muted">Configure playback timing and ad rotation independently for each player screen.</p>
   </div>
+  <div class="page-header-actions">
+    <form method="post" action="/admin/player-settings/refresh-all-screens" style="margin: 0;">
+      <button type="submit" class="secondary">Refresh All Screens</button>
+    </form>
+  </div>
 </header>
 
 <%
@@ -81,6 +86,10 @@ const valueFor = (settings, key, fallback) => (
                 <label>
                   <span>Poster Width (%)</span>
                   <input type="number" name="poster_width_percent" min="20" max="70" step="1" value="<%= valueFor(card.settings, 'poster_width_percent', 38) %>" required>
+                </label>
+                <label>
+                  <span>Grid Height (%)</span>
+                  <input type="number" name="row_height_percent" min="70" max="130" step="1" value="<%= valueFor(card.settings, 'row_height_percent', 100) %>" required>
                 </label>
               <% } %>
             </div>

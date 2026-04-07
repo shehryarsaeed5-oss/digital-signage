@@ -78,6 +78,7 @@ router.get('/movie-sync/preview-coming', requireAuth, adminController.previewCom
 router.get('/movie-sync/preview-details', requireAuth, adminController.previewMovieDetails);
 router.get('/movie-sync/preview-all', requireAuth, adminController.previewAllCueCinemaMovies);
 router.post('/movie-sync/run', requireAuth, adminController.runCueCinemaSync);
+router.post('/player-settings/refresh-all-screens', requireAuth, adminController.refreshAllScreens);
 router.post('/player-settings', requireAuth, adminController.savePlayerSettings);
 router.post('/player-settings/reset-portrait', requireAuth, adminController.resetPortraitSettings);
 router.post('/player-settings/reset-cinema-wall', requireAuth, adminController.resetCinemaWallSettings);

@@ -1,4 +1,4 @@
-const { all, run } = require('../config/database');
+const { all, get, run } = require('../config/database');
 
 const DEFAULT_PLAYER_SETTINGS = {
   now_showing_duration_seconds: 8,
@@ -36,6 +36,7 @@ const SCREEN_PLAYER_SETTING_DEFAULTS = Object.freeze({
   enable_ads: true,
   ad_frequency_movies: 2,
   poster_width_percent: 38,
+  row_height_percent: 100,
 });
 
 const SCREEN_PLAYER_SETTING_ORDER = ['cinema', 'cinema-3x2', 'cinema-portrait'];
@@ -88,6 +89,7 @@ function rowToScreenPlayerSettings(row) {
   }
 
   const posterWidth = Number.parseInt(row.poster_width_percent, 10);
+  const rowHeight = Number.parseInt(row.row_height_percent, 10);
 
   return {
     screen: row.screen,
@@ -98,6 +100,9 @@ function rowToScreenPlayerSettings(row) {
     poster_width_percent: Number.isFinite(posterWidth)
       ? posterWidth
       : SCREEN_PLAYER_SETTING_DEFAULTS.poster_width_percent,
+    row_height_percent: Number.isFinite(rowHeight)
+      ? rowHeight
+      : SCREEN_PLAYER_SETTING_DEFAULTS.row_height_percent,
     updated_at: row.updated_at || '',
   };
 }
@@ -107,6 +112,7 @@ function sanitizeScreenPlayerSettings(settings = {}) {
   const comingSoon = Number.parseInt(settings.coming_soon_duration_seconds, 10);
   const adFrequency = Number.parseInt(settings.ad_frequency_movies, 10);
   const posterWidth = Number.parseInt(settings.poster_width_percent, 10);
+  const rowHeight = Number.parseInt(settings.row_height_percent, 10);
 
   return {
     now_showing_duration_seconds: Number.isFinite(nowShowing) && nowShowing > 0 ? nowShowing : SCREEN_PLAYER_SETTING_DEFAULTS.now_showing_duration_seconds,
@@ -116,6 +122,9 @@ function sanitizeScreenPlayerSettings(settings = {}) {
     poster_width_percent: Number.isFinite(posterWidth) && posterWidth >= 20 && posterWidth <= 70
       ? posterWidth
       : SCREEN_PLAYER_SETTING_DEFAULTS.poster_width_percent,
+    row_height_percent: Number.isFinite(rowHeight) && rowHeight >= 70 && rowHeight <= 130
+      ? rowHeight
+      : SCREEN_PLAYER_SETTING_DEFAULTS.row_height_percent,
   };
 }
 
@@ -183,9 +192,42 @@ async function upsertPlayerSettings(settings) {
   return getPlayerSettings();
 }
 
+async function getPlayerSettingValue(settingKey) {
+  const row = await get(
+    `SELECT setting_value
+     FROM player_settings
+     WHERE setting_key = ?
+     LIMIT 1`,
+    [settingKey]
+  );
+
+  return row?.setting_value || '';
+}
+
+async function upsertPlayerSettingValue(settingKey, settingValue) {
+  await run(
+    `INSERT INTO player_settings (setting_key, setting_value, updated_at)
+     VALUES (?, ?, CURRENT_TIMESTAMP)
+     ON CONFLICT(setting_key) DO UPDATE SET
+       setting_value = excluded.setting_value,
+       updated_at = CURRENT_TIMESTAMP`,
+    [settingKey, String(settingValue)]
+  );
+
+  return getPlayerSettingValue(settingKey);
+}
+
+async function getGlobalRefreshToken() {
+  return getPlayerSettingValue('global_refresh_token');
+}
+
+async function setGlobalRefreshToken(refreshToken) {
+  return upsertPlayerSettingValue('global_refresh_token', refreshToken);
+}
+
 async function listScreenPlayerSettings() {
   const rows = await all(
-    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, poster_width_percent, updated_at
+    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, poster_width_percent, row_height_percent, updated_at
      FROM screen_player_settings
      WHERE screen IN ('cinema', 'cinema-portrait', 'cinema-3x2')
      ORDER BY CASE screen
@@ -206,7 +248,7 @@ async function getScreenPlayerSettings(screen) {
   }
 
   const row = await all(
-    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, poster_width_percent, updated_at
+    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, poster_width_percent, row_height_percent, updated_at
      FROM screen_player_settings
      WHERE screen = ?
      LIMIT 1`,
@@ -232,14 +274,16 @@ async function upsertScreenPlayerSettings(screen, settings) {
        enable_ads,
        ad_frequency_movies,
        poster_width_percent,
+       row_height_percent,
        updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
      ON CONFLICT(screen) DO UPDATE SET
        now_showing_duration_seconds = excluded.now_showing_duration_seconds,
        coming_soon_duration_seconds = excluded.coming_soon_duration_seconds,
        enable_ads = excluded.enable_ads,
        ad_frequency_movies = excluded.ad_frequency_movies,
        poster_width_percent = excluded.poster_width_percent,
+       row_height_percent = excluded.row_height_percent,
        updated_at = CURRENT_TIMESTAMP`,
     [
       normalizedScreen,
@@ -248,6 +292,7 @@ async function upsertScreenPlayerSettings(screen, settings) {
       payload.enable_ads,
       payload.ad_frequency_movies,
       payload.poster_width_percent,
+      payload.row_height_percent,
     ]
   );
 
@@ -262,6 +307,8 @@ module.exports = {
   normalizeScreenName,
   getPlayerSettings,
   upsertPlayerSettings,
+  getGlobalRefreshToken,
+  setGlobalRefreshToken,
   getScreenPlayerSettings,
   listScreenPlayerSettings,
   upsertScreenPlayerSettings,

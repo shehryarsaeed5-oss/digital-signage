@@ -21,6 +21,7 @@
   --cinema-wall-status-size: 1.2rem;
   --cinema-wall-card-padding: 40px;
   --cinema-wall-poster-width: 38%;
+  --cinema-wall-row-scale: 1;
   --cinema-wall-radius: 0px;
   --cinema-wall-header-gap: 16px;
   --cinema-wall-content-scale: 1;
@@ -136,7 +137,7 @@ body {
   display: flex;
   flex-direction: column;
   justify-content: space-around;
-  padding: calc(var(--cinema-wall-card-padding) * var(--cinema-wall-content-scale));
+  padding: calc(var(--cinema-wall-card-padding) * var(--cinema-wall-content-scale) * var(--cinema-wall-row-scale));
   min-width: 0;
   height: 100%;
   background: linear-gradient(90deg, #05070a 0%, #0d121a 100%);
@@ -145,7 +146,7 @@ body {
 .cinema-card-top {
   display: flex;
   flex-direction: column;
-  gap: calc(var(--cinema-wall-header-gap) * var(--cinema-wall-content-scale));
+  gap: calc(var(--cinema-wall-header-gap) * var(--cinema-wall-content-scale) * var(--cinema-wall-row-scale));
 }
 
 .cinema-card-title {
@@ -177,12 +178,12 @@ body {
 .cinema-showtimes-grid {
   display: flex;
   flex-wrap: wrap;
-  gap: calc(18px * var(--cinema-wall-content-scale));
+  gap: calc(18px * var(--cinema-wall-content-scale) * var(--cinema-wall-row-scale));
   justify-content: flex-start;
 }
 
 .cinema-time-pill {
-  min-height: calc(64px * var(--cinema-wall-content-scale));
+  min-height: calc(64px * var(--cinema-wall-content-scale) * var(--cinema-wall-row-scale));
   min-width: 110px;
   padding: 0 calc(24px * var(--cinema-wall-content-scale));
   border-radius: 8px;
@@ -207,7 +208,7 @@ body {
 .cinema-release-info {
   display: flex;
   flex-direction: column;
-  gap: calc(14px * var(--cinema-wall-content-scale));
+  gap: calc(14px * var(--cinema-wall-content-scale) * var(--cinema-wall-row-scale));
 }
 
 .cinema-release-label {
