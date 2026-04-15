@@ -1,0 +1,190 @@
+<%- include('partials/layout-start', { pageTitle: 'Movie Schedule Share API' }) %>
+
+<style>
+  .movie-schedule-api-grid {
+    display: grid;
+    gap: 20px;
+  }
+
+  .movie-schedule-api-top {
+    display: grid;
+    gap: 16px;
+  }
+
+  .movie-schedule-api-path {
+    display: grid;
+    gap: 10px;
+    padding: 18px 20px;
+    border-radius: 16px;
+    border: 1px solid #dbe3ee;
+    background: #f8fbff;
+  }
+
+  .movie-schedule-api-path-row {
+    display: flex;
+    gap: 12px;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+
+  .movie-schedule-api-code {
+    padding: 10px 12px;
+    border-radius: 12px;
+    background: #0f172a;
+    color: #f8fafc;
+    font-size: 13px;
+    overflow-x: auto;
+  }
+
+  .movie-schedule-api-note {
+    display: grid;
+    gap: 8px;
+  }
+
+  .movie-schedule-api-preview {
+    display: grid;
+    gap: 12px;
+  }
+
+  .movie-schedule-api-preview pre {
+    margin: 0;
+    padding: 16px;
+    border-radius: 14px;
+    background: #0b1220;
+    color: #dbeafe;
+    overflow: auto;
+    max-height: 520px;
+    font-size: 12px;
+    line-height: 1.5;
+  }
+
+  .movie-schedule-api-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: #e0f2fe;
+    color: #075985;
+    font-size: 12px;
+    font-weight: 700;
+  }
+</style>
+
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>Movie Schedule Share API</h1>
+    <p class="muted">
+      Read-only API for external systems such as Notice Board. It reuses the locally synced CUE movie schedule stored in SQLite and does not scrape CUE directly.
+    </p>
+  </div>
+  <div class="page-header-actions">
+    <span class="movie-schedule-api-chip">Read only</span>
+    <button type="button" class="secondary" data-copy-target="movie-schedule-endpoint">Copy Endpoint</button>
+  </div>
+</header>
+
+<main class="admin-grid">
+  <% if (success) { %><section class="panel panel-wide"><div class="alert success"><%= success %></div></section><% } %>
+  <% if (error) { %><section class="panel panel-wide"><div class="alert error"><%= error %></div></section><% } %>
+
+  <section class="panel panel-wide movie-schedule-api-grid">
+    <div class="movie-schedule-api-top">
+      <div class="panel-heading">
+        <div>
+          <h2>Endpoint</h2>
+          <p class="muted">Use this URL in other systems to read today’s schedule or a specific date.</p>
+        </div>
+      </div>
+
+      <div class="movie-schedule-api-path">
+        <div class="movie-schedule-api-path-row">
+          <strong>Share API Path</strong>
+          <span class="muted">Copy this relative endpoint path into external apps.</span>
+        </div>
+        <div id="movie-schedule-endpoint" class="movie-schedule-api-code"><%= endpointPath %></div>
+        <div class="movie-schedule-api-path-row">
+          <span class="muted">Example:</span>
+          <code><%= endpointExample %></code>
+        </div>
+        <% if (tokenEnabled) { %>
+          <div class="movie-schedule-api-path-row">
+            <span class="muted">Token example:</span>
+            <code><%= endpointExampleWithToken %></code>
+          </div>
+        <% } else { %>
+          <div class="movie-schedule-api-path-row">
+            <span class="muted">Optional protection:</span>
+            <code>?token=YOUR_TOKEN</code>
+            <span class="muted">Supported if <code>MOVIE_SHARE_TOKEN</code> is set on the server.</span>
+          </div>
+        <% } %>
+      </div>
+
+      <div class="movie-schedule-api-note">
+        <h2>How it works</h2>
+        <p class="muted">
+          The signage app reads movie titles, posters, runtimes, and showtimes from its own SQLite database. This page exposes that same data in a clean format for systems like Notice Board.
+        </p>
+        <p class="muted">
+          Screen values are included when CUE exposes them on the movie details page. Older rows without screen data remain valid and are still returned with <code>screen: null</code>.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <section class="panel panel-wide movie-schedule-api-preview">
+    <div class="panel-heading">
+      <div>
+        <h2>Today’s Preview</h2>
+        <p class="muted">Rendered from the local database for <%= dateLabel %>.</p>
+      </div>
+    </div>
+
+    <pre><code><%= previewJson %></code></pre>
+  </section>
+</main>
+
+<script>
+  (function () {
+    const button = document.querySelector('[data-copy-target="movie-schedule-endpoint"]');
+    const target = document.getElementById('movie-schedule-endpoint');
+
+    if (!button || !target) {
+      return;
+    }
+
+    button.addEventListener('click', async () => {
+      const value = target.textContent.trim();
+
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(value);
+        } else {
+          const textarea = document.createElement('textarea');
+          textarea.value = value;
+          textarea.setAttribute('readonly', 'true');
+          textarea.style.position = 'absolute';
+          textarea.style.left = '-9999px';
+          document.body.appendChild(textarea);
+          textarea.select();
+          document.execCommand('copy');
+          document.body.removeChild(textarea);
+        }
+
+        const originalLabel = button.textContent;
+        button.textContent = 'Copied';
+        window.setTimeout(() => {
+          button.textContent = originalLabel;
+        }, 1400);
+      } catch (error) {
+        button.textContent = 'Copy failed';
+        window.setTimeout(() => {
+          button.textContent = 'Copy Endpoint';
+        }, 1400);
+      }
+    });
+  })();
+</script>
+
+<%- include('partials/layout-end') %>

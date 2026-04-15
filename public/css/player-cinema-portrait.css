@@ -1,11 +1,12 @@
 :root {
-  --portrait-strip-height: 10%;
-  --portrait-title-size: 1.75vh;
-  --portrait-status-size: 1.25vh;
-  --portrait-gap: 0.35vh;
-  --portrait-showtime-height: 3.1vh;
+  --portrait-strip-height: 0%;
+  --portrait-title-size: 1.65vh;
+  --portrait-status-size: 1.08vh;
+  --portrait-gap: 0.7vh;
+  --portrait-showtime-height: 4.2vh;
   --portrait-badge-width: 18.5%;
-  --portrait-info-padding: 1.6vh;
+  --portrait-info-padding: 1.15vh;
+  --portrait-rating-size: 2.05vh;
 }
 
 html,
@@ -44,12 +45,17 @@ body {
   z-index: 1;
 }
 
+.portrait-slide:not(.is-ad-mode) {
+  --portrait-strip-height: 16%;
+}
+
 .portrait-slide.is-visible {
   opacity: 1;
   z-index: 2;
 }
 
 .portrait-slide.is-ad-mode {
+  --portrait-strip-height: 0%;
   grid-template-rows: minmax(0, 1fr);
 }
 
@@ -139,71 +145,96 @@ body {
   text-transform: uppercase;
 }
 
-.portrait-info-strip,
-.portrait-empty-strip {
+.portrait-info-strip {
   width: 100%;
   height: 100%;
   min-height: 0;
   overflow: hidden;
-  display: grid;
-  grid-template-columns: var(--portrait-badge-width) 1fr;
-  background: #010204;
-  border-top: 0.22vh solid #fcc82b;
-  box-shadow: 0 -0.8vh 2vh rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  background: #181030;
+  border-top: 0.18vh solid rgba(255, 255, 255, 0.06);
+  box-shadow:
+    0 -0.9vh 2.2vh rgba(0, 0, 0, 0.52),
+    inset 0 0.12vh 0 rgba(255, 255, 255, 0.04);
+}
+
+.portrait-info-strip * {
+  margin-top: 0;
+  margin-bottom: 0;
 }
 
 .portrait-info-strip.is-ad-mode {
   display: none !important;
 }
 
+.portrait-info-main {
+  display: flex;
+  flex: 1 1 auto;
+  min-width: 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: stretch;
+  gap: 1.42vh;
+  padding: 10px 24px;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+.portrait-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 0.8vh;
+  min-width: 0;
+  width: 100%;
+}
+
 .portrait-status-badge {
   position: relative;
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  height: 100%;
-  background: linear-gradient(180deg, #ffd65b 0%, #fcc82b 50%, #d69e00 100%);
-  clip-path: polygon(0 0, 100% 0, 86% 100%, 0 100%);
-  padding-right: 4%;
+  flex: 0 0 auto;
+  width: var(--portrait-rating-size);
+  height: var(--portrait-rating-size);
+  border-radius: 999px;
+  background:
+    linear-gradient(180deg, #ffd65b 0%, #fcc82b 52%, #d69e00 100%);
+  border: 0.14vh solid rgba(255, 211, 74, 0.52);
+  box-shadow:
+    inset 0 0.12vh 0 rgba(255, 255, 255, 0.18);
+  padding: 0;
+  clip-path: none;
 }
 
-.portrait-status-content {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  line-height: 1;
-}
-
-.portrait-status-line {
+.portrait-rating-value {
   display: block;
-  color: #000;
-  font-size: var(--portrait-status-size);
-  font-weight: 950;
-  letter-spacing: 0.1em;
+  color: #0b0b0b;
+  font-size: 0.75vh;
+  font-weight: 750;
+  letter-spacing: 0.03em;
   text-transform: uppercase;
   text-align: center;
   white-space: nowrap;
+  line-height: 1;
 }
 
-.portrait-info-main {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  gap: var(--portrait-gap);
-  padding: 0 var(--portrait-info-padding);
-  background: linear-gradient(90deg, #05070a 0%, #0a0e16 100%);
+.portrait-rating-badge {
+  color: #fff;
 }
 
 .portrait-title {
   margin: 0;
   min-width: 0;
-  color: #fcc82b;
-  font-size: var(--portrait-title-size);
-  font-weight: 900;
+  flex: 0 1 auto;
+  color: #ffffff;
+  font-size: 2.6vh;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: 0.03em;
-  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  text-transform: capitalize;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -215,8 +246,10 @@ body {
   min-height: 0;
   overflow: hidden;
   display: flex;
-  align-items: center;
-  gap: 0.65vh;
+  width: 100%;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
   flex-wrap: nowrap;
   white-space: nowrap;
 }
@@ -226,19 +259,16 @@ body {
 }
 
 .portrait-showtime {
-  flex: 0 0 auto;
+  flex: 1 1 0;
   max-width: 100%;
   min-width: 0;
-  height: var(--portrait-showtime-height);
-  padding: 0 1vh;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
-  gap: 0.6vh;
-  border: 0.12vh solid rgba(255, 255, 255, 0.15);
-  background: rgba(255, 255, 255, 0.04);
+  gap: 0.4vh;
+  border-radius: 12px;
   color: #fff;
-  font-size: 1.45vh;
+  font-size: 1.35vh;
   font-weight: 800;
   line-height: 1;
   letter-spacing: 0.04em;
@@ -249,22 +279,89 @@ body {
 }
 
 .portrait-showtime.is-next {
-  border-color: rgba(252, 200, 43, 0.95);
+  flex: 1.2 1 0;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  height: clamp(95px, 10vh, 110px);
+  padding: 1px 16px 1px;
+  gap: 0.6vh;
+  border-radius: 0;
   background:
-    linear-gradient(180deg, rgba(252, 200, 43, 0.2) 0%, rgba(252, 200, 43, 0.08) 100%),
-    rgba(255, 255, 255, 0.03);
-  box-shadow: 0 0.45vh 1.3vh rgba(252, 200, 43, 0.18);
+    linear-gradient(135deg, #9858f8 0%, #7c3aed 100%);
+  box-shadow:
+    inset 0 0.12vh 0 rgba(255, 255, 255, 0.12);
+  -webkit-clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
+ clip-path: polygon(0 0, 100% 0, calc(100% - 20px) 100%, 0 100%);
 }
 
-.portrait-showtime-badge {
-  flex: 0 0 auto;
-  padding: 0.34vh 0.62vh;
-  background: #fcc82b;
-  color: #080808;
-  font-size: 1.02vh;
-  font-weight: 950;
-  letter-spacing: 0.18em;
+.portrait-showtime-secondary {
+  flex: 1 1 0;
+  min-width: 0;
+  width: auto;
+  max-width: none;
+  color: rgba(255, 255, 255, 0.78);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  height: auto;
+  border-radius: 0;
+  overflow: visible;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 0.18vh;
+}
+
+.portrait-showtime.is-secondary {
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.portrait-showtime.is-empty {
+  visibility: hidden;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  clip-path: none;
+  -webkit-clip-path: none;
+  padding: 0;
+  pointer-events: none;
+}
+
+.portrait-coming-soon {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 0.6vh;
+  min-width: 0;
+}
+
+.portrait-coming-label {
+  font-size: 2.0vh;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
   line-height: 1;
+}
+
+.portrait-coming-date {
+  font-size: 2.4vh;
+  font-weight: 700;
+  color: #fcc82b;
+  line-height: 1;
+}
+
+.portrait-showtime-label {
+  display: block;
+  color: rgba(255, 255, 255, 0.8);
+  font-size: 2.2vh;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  line-height: 1;
+  margin: 0;
 }
 
 .portrait-showtime-text {
@@ -273,6 +370,86 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  line-height: 1;
+  margin: 0;
+}
+
+.portrait-showtime.is-next .portrait-showtime-text {
+  color: #ffffff;
+  font-size: 2.48vh;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.portrait-showtime-screen {
+  display: block;
+  color: #fcc82b;
+  font-size: 1.4vh;
+  font-weight: 700;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+  line-height: 1;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.portrait-showtime-secondary .portrait-showtime-text {
+  font-size: 2.55vh;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.portrait-showtime-secondary .portrait-showtime-screen {
+  color: #fcc82b;
+  font-size: 1.4vh;
+  font-weight: 600;
+  letter-spacing: 0.10em;
+  text-transform: uppercase;
+  line-height: 1;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+.portrait-showtime.is-next {
+  color: #fff;
+}
+
+.portrait-showtime.is-next .portrait-showtime-label {
+  color: #ffffff; /* full white */
+  font-size: 2.2vh;
+  font-weight: 600;
+  letter-spacing: 0.09em;
+  margin: 0;
+}
+
+.portrait-showtime.is-next .portrait-showtime-screen {
+  color: #fcc82b;
+  font-size: 1.4vh;
+  font-weight: 600;
+  letter-spacing: 0.11em;
+  line-height: 1;
+  width: 100%;
+  max-width: none;
+  min-width: 0;
+  overflow: visible;
+  text-overflow: clip;
+  white-space: normal;
+  word-break: break-word;
+  overflow-wrap: anywhere;
 }
 
 .portrait-empty {

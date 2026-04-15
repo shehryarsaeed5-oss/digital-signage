@@ -1,0 +1,104 @@
+<%- include('partials/layout-start', { pageTitle: 'Ad Performance' }) %>
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>Ad Performance</h1>
+    <p class="muted">Track how often each ad has played and where it is targeted.</p>
+  </div>
+  <div class="page-header-actions">
+    <a class="secondary-link" href="/admin/reports">Overview</a>
+    <a class="secondary-link" href="/admin/reports/screens">Screen Status</a>
+    <a class="secondary-link" href="<%= exportUrl %>">Export CSV</a>
+  </div>
+</header>
+
+<main class="admin-grid report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <section class="panel panel-wide">
+    <div class="panel-heading">
+      <div>
+        <h2>Filters</h2>
+        <p class="muted">Ad report scopes use the same date range and screen filters as the overview page.</p>
+      </div>
+    </div>
+
+    <form method="get" action="/admin/reports/ads" class="report-filter-grid report-filter-grid-ads">
+      <label>
+        <span>Date From</span>
+        <input type="date" name="date_from" value="<%= filters.dateFrom || '' %>">
+      </label>
+      <label>
+        <span>Date To</span>
+        <input type="date" name="date_to" value="<%= filters.dateTo || '' %>">
+      </label>
+      <label>
+        <span>Screen</span>
+        <select name="screen">
+          <% filterOptions.screens.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= filters.screen === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }); %>
+        </select>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="secondary">Apply Filters</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel panel-wide">
+    <div class="report-export-bar">
+      <div>
+        <h2>Ad Playback Totals</h2>
+        <p class="muted">Rows are grouped by ad identity and title.</p>
+      </div>
+      <a class="secondary-link" href="<%= exportUrl %>">Export CSV</a>
+    </div>
+
+    <% if (!rows || rows.length === 0) { %>
+      <p class="report-empty-state">No ad playback logs were found for the selected filters.</p>
+    <% } else { %>
+      <div class="report-table-wrapper" style="margin-top: 16px;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th scope="col">Ad Title</th>
+              <th scope="col">Target Screens</th>
+              <th scope="col">Plays</th>
+              <th scope="col">Estimated Display Time</th>
+              <th scope="col">Last Played</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach((row) => { %>
+              <tr>
+                <td>
+                  <div class="report-meta-list">
+                    <strong><%= row.item_title %></strong>
+                    <% if (row.item_id) { %>
+                      <span class="report-meta-text">ID: <%= row.item_id %></span>
+                    <% } %>
+                  </div>
+                </td>
+                <td><span class="report-pill <%= row.targetScreensLabel === 'All Screens' ? 'is-muted' : '' %>"><%= row.targetScreensLabel %></span></td>
+                <td><%= row.total_plays %></td>
+                <td><%= row.totalDisplayLabel %></td>
+                <td><%= row.lastPlayedLabel %></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('partials/layout-end') %>

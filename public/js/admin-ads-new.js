@@ -53,7 +53,7 @@ const adminAdsList = (() => {
     setLoading(true);
     try {
       console.log('Fetching ads list...');
-      const response = await fetch('/api/ads?status=active');
+      const response = await fetch('/api/ads?status=active&eligible=0');
       if (!response.ok) {
         throw new Error(`Server returned ${response.status}`);
       }
@@ -81,6 +81,14 @@ const adminAdsList = (() => {
     return button;
   };
 
+  const formatDuration = (value) => {
+    const numericValue = Number.parseInt(value, 10);
+    const totalSeconds = Number.isFinite(numericValue) && numericValue > 0 ? numericValue : 0;
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+  };
+
   const renderRows = (items) => {
     tableBody.innerHTML = '';
     if (!Array.isArray(items)) {
@@ -95,8 +103,7 @@ const adminAdsList = (() => {
       row.appendChild(titleCell);
 
       const durationCell = document.createElement('td');
-      durationCell.textContent =
-        ad.duration !== undefined && ad.duration !== null ? String(ad.duration) : '—';
+      durationCell.textContent = formatDuration(ad.duration_seconds ?? ad.duration ?? 0);
       row.appendChild(durationCell);
 
       const statusCell = document.createElement('td');
@@ -168,5 +175,48 @@ const adminAdsList = (() => {
   init();
   return {
     refresh,
+  };
+})();
+
+const adminAdUploadForm = (() => {
+  const form = document.querySelector('form[enctype="multipart/form-data"]');
+  const fileInput = form?.querySelector('input[name="ad_file"]');
+  const durationField = document.querySelector('#ad-duration-field');
+  const durationInput = document.querySelector('#ad-duration-input');
+  const durationHelper = document.querySelector('#ad-duration-helper');
+
+  if (!form || !fileInput || !durationField || !durationInput || !durationHelper) {
+    return null;
+  }
+
+  const setImageMode = () => {
+    durationField.classList.remove('hidden');
+    durationInput.disabled = false;
+    durationInput.required = true;
+    durationHelper.textContent = 'Images require a duration in seconds.';
+  };
+
+  const setVideoMode = () => {
+    durationField.classList.add('hidden');
+    durationInput.disabled = true;
+    durationInput.required = false;
+    durationHelper.textContent = 'Video ads play until the file ends.';
+  };
+
+  const syncDurationState = () => {
+    const fileName = String(fileInput.value || '').toLowerCase();
+    if (fileName.endsWith('.mp4')) {
+      setVideoMode();
+      return;
+    }
+
+    setImageMode();
+  };
+
+  fileInput.addEventListener('change', syncDurationState);
+  syncDurationState();
+
+  return {
+    syncDurationState,
   };
 })();

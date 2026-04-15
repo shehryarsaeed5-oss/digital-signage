@@ -25,7 +25,7 @@
 
       <% if (ad) { %>
         <div id="ad-edit-message" class="alert success hidden"></div>
-        <form id="ad-edit-form" data-ad-id="<%= ad.id %>" class="stack">
+        <form id="ad-edit-form" data-ad-id="<%= ad.id %>" data-ad-type="<%= ad.type || '' %>" class="stack">
           <input type="hidden" name="id" value="<%= ad.id %>">
 
           <label>
@@ -40,15 +40,23 @@
 
           <label>
             <span>Duration (seconds)</span>
-            <input
-              type="number"
-              name="duration_seconds"
-              min="1"
-              step="1"
-              value="<%= typeof ad.duration_seconds === 'number' ? ad.duration_seconds : '' %>"
-            >
-            <p class="muted" style="margin-top: 4px;">
-              Leave empty for video assets that should play for their full length.
+            <div id="ad-duration-field">
+              <input
+                id="ad-duration-input"
+                type="number"
+                name="duration_seconds"
+                min="1"
+                step="1"
+                value="<%= typeof ad.duration_seconds === 'number' ? ad.duration_seconds : '' %>"
+                required
+              >
+            </div>
+            <p class="muted" id="ad-duration-helper" style="margin-top: 4px;">
+              <% if (ad.type === 'video') { %>
+                This video will play until it ends.
+              <% } else { %>
+                Images require a duration in seconds.
+              <% } %>
             </p>
           </label>
 
@@ -58,6 +66,26 @@
               <option value="inactive" <%= ad.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
               <option value="active" <%= ad.status === 'active' ? 'selected' : '' %>>Active</option>
             </select>
+          </label>
+
+          <label>
+            <span>Start At</span>
+            <input
+              type="datetime-local"
+              name="start_at"
+              value="<%= ad.start_at_formatted || '' %>"
+            >
+            <p class="muted" style="margin-top: 4px;">Optional. Leave blank to allow the ad immediately.</p>
+          </label>
+
+          <label>
+            <span>End At</span>
+            <input
+              type="datetime-local"
+              name="end_at"
+              value="<%= ad.end_at_formatted || '' %>"
+            >
+            <p class="muted" style="margin-top: 4px;">Optional. Leave blank to keep the ad available.</p>
           </label>
 
           <label>

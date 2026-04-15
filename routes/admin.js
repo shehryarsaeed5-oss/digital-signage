@@ -10,6 +10,7 @@ const {
 
 const adminController = require('../controllers/adminController');
 const vistaReportRoutes = require('./vistaReport');
+const reportRoutes = require('./report');
 const { requireAuth } = require('../middlewares/auth');
 
 const router = express.Router();
@@ -74,7 +75,11 @@ router.get('/ads/edit/:id', requireAuth, adminController.editAdPage);
 router.get('/movie-sync', requireAuth, adminController.movieSyncPage);
 router.get('/playlist', requireAuth, adminController.playlistPage);
 router.get('/player-settings', requireAuth, adminController.playerSettingsPage);
+router.get('/movie-schedule-api', requireAuth, adminController.movieScheduleApiPage);
+router.get('/screens', requireAuth, adminController.screensPage);
+router.post('/screens/refresh', requireAuth, adminController.refreshScreen);
 router.use('/vista-report', requireAuth, vistaReportRoutes);
+router.use('/reports', requireAuth, reportRoutes);
 router.get('/movie-sync/preview-now', requireAuth, adminController.previewNowShowing);
 router.get('/movie-sync/preview-coming', requireAuth, adminController.previewComingSoon);
 router.get('/movie-sync/preview-details', requireAuth, adminController.previewMovieDetails);
@@ -87,6 +92,10 @@ router.post('/player-settings/reset-cinema-wall', requireAuth, adminController.r
 router.post('/media', requireAuth, upload.single('media_file'), adminController.uploadMedia);
 router.post('/ads', requireAuth, adUpload.single('ad_file'), adminController.uploadAd);
 router.post('/ads/import-from-folder', requireAuth, adminController.importAdFromFolder);
+router.post('/ads/bulk-status', requireAuth, adminController.bulkUpdateAdsStatus);
+router.post('/ads/bulk-delete', requireAuth, adminController.bulkDeleteAds);
+router.post('/ads/bulk-duplicate', requireAuth, adminController.bulkDuplicateAds);
+router.post('/ads/bulk-targets', requireAuth, adminController.bulkUpdateAdsTargets);
 router.post('/ads/:id/compress', requireAuth, adminController.compressAdForSignage);
 router.post('/ads/:id/import-optimized', requireAuth, adminController.importOptimizedAd);
 router.post('/ads/:id/delete', requireAuth, adminController.deleteAd);

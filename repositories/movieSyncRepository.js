@@ -70,6 +70,34 @@ async function listMoviesBySourceName(sourceName) {
   );
 }
 
+async function listMovieScheduleRowsByDate(sourceName, showDate, { includeHidden = false } = {}) {
+  const { all } = require('../config/database');
+  const hiddenClause = includeHidden ? '' : 'AND m.excluded_from_playlist = 0';
+
+  return all(
+    `SELECT
+       m.id AS movie_id,
+       m.title,
+       m.poster_url,
+       m.local_poster_path,
+       m.status,
+       m.runtime,
+       m.genre,
+       m.release_date,
+       m.details_url,
+       ms.show_date,
+       ms.show_time,
+       ms.screen
+     FROM movies m
+     INNER JOIN movie_showtimes ms ON ms.movie_id = m.id
+     WHERE m.source_name = ?
+       ${hiddenClause}
+       AND ms.show_date = ?
+     ORDER BY m.title ASC, ms.show_time ASC, m.id ASC`,
+    [sourceName, showDate]
+  );
+}
+
 async function countMoviesByLocalPosterPath(localPosterPath) {
   const row = await get(
     `SELECT COUNT(*) AS total
@@ -115,15 +143,17 @@ async function insertMovieShowtimes(movieId, showtimes = []) {
       `INSERT INTO movie_showtimes (
          movie_id,
          show_date,
-         show_time
-       ) VALUES (?, ?, ?)`,
-      [movieId, showtime.show_date, showtime.show_time]
+         show_time,
+         screen
+       ) VALUES (?, ?, ?, ?)`,
+      [movieId, showtime.show_date, showtime.show_time, showtime.screen || null]
     );
   }
 }
 
 module.exports = {
   listMoviesBySourceName,
+  listMovieScheduleRowsByDate,
   countMoviesByLocalPosterPath,
   deleteMovieById,
   getMovieById,

@@ -19,13 +19,32 @@ const state = {
   comingSoonPage: 0,
   nowShowingTimer: null,
   comingSoonTimer: null,
+  currentPlaybackItem: null,
+  currentPlaybackStartedAt: null,
+  currentPlaybackToken: null,
+  heartbeatTimer: null,
+  playbackWatchdogTimer: null,
+  lastPlaybackActivityAt: Date.now(),
+  playerMode: 'waiting',
   playerSettings: {
     now_showing_duration_seconds: 8,
     coming_soon_duration_seconds: 5,
     enable_ads: true,
     ad_frequency_movies: 2,
+    ad_break_interval_seconds: 240,
+    ads_per_break: 2,
+    max_video_ad_seconds: 15,
+    default_image_ad_seconds: 10,
+    house_ad_fallback_enabled: true,
   },
+  adBreakActive: false,
+  adBreakResumeIndex: 0,
+  contentElapsedSeconds: 0,
+  adRotationCursor: 0,
   lastRefreshToken: null,
+  lastScreenRefreshToken: null,
+  lastGroupRefreshToken: null,
+  lastSiteRefreshToken: null,
 };
 
 const SLOT_CONFIG = [
@@ -53,6 +72,302 @@ const comingSoonSlotNodes = SLOT_CONFIG
   .filter((slot) => slot.type === 'comingSoon')
   .map((slot) => document.getElementById(slot.id));
 const adOverlayNode = createAdOverlay();
+const playerStatusBadgeNode = createPlayerStatusBadge();
+const REPORT_ENDPOINT_BASE = '/api/reports';
+const REPORT_HEARTBEAT_INTERVAL_MS = 45000;
+const PLAYER_HEARTBEAT_INTERVAL_MS = 30000;
+
+const reportState = {
+  heartbeatTimer: null,
+  currentItem: null,
+  currentStartedAt: null,
+  currentToken: null,
+  currentSessionId: null,
+};
+
+const PLAYER_CACHE_KEY = 'signage_cache_cinema';
+const showtimeUtils = window.ShowtimeUtils || {};
+const formatTodayString = showtimeUtils.formatTodayString;
+const parseDateLabel = showtimeUtils.parseDateLabel;
+const parseTimeLabel = showtimeUtils.parseTimeLabel;
+const buildLocalDateTime = showtimeUtils.buildLocalDateTime;
+const filterTodayShowtimes = showtimeUtils.filterTodayShowtimes;
+
+function readPlayerCache() {
+  try {
+    const cachedValue = window.localStorage?.getItem(PLAYER_CACHE_KEY);
+    return cachedValue ? JSON.parse(cachedValue) : null;
+  } catch (error) {
+    return null;
+  }
+}
+
+function writePlayerCache(payload) {
+  try {
+    window.localStorage?.setItem(PLAYER_CACHE_KEY, JSON.stringify(payload));
+  } catch (error) {
+    // Ignore cache write failures.
+  }
+}
+
+function showWaitingForServerMessage() {
+  setPlayerStatusBadge('Waiting for server');
+  if (statusNode) {
+    statusNode.textContent = 'Waiting for server...';
+  }
+}
+
+function createPlayerStatusBadge() {
+  if (!document?.body) {
+    return null;
+  }
+
+  const badge = document.createElement('div');
+  badge.setAttribute('aria-hidden', 'true');
+  badge.style.position = 'fixed';
+  badge.style.top = '12px';
+  badge.style.right = '12px';
+  badge.style.zIndex = '1000';
+  badge.style.padding = '5px 10px';
+  badge.style.borderRadius = '999px';
+  badge.style.border = '1px solid rgba(255, 255, 255, 0.16)';
+  badge.style.background = 'rgba(2, 6, 23, 0.56)';
+  badge.style.color = '#e5e7eb';
+  badge.style.fontSize = '10px';
+  badge.style.fontWeight = '700';
+  badge.style.letterSpacing = '0.14em';
+  badge.style.textTransform = 'uppercase';
+  badge.style.lineHeight = '1';
+  badge.style.pointerEvents = 'none';
+  badge.style.backdropFilter = 'blur(6px)';
+  badge.style.webkitBackdropFilter = 'blur(6px)';
+  badge.style.boxShadow = '0 6px 18px rgba(0, 0, 0, 0.18)';
+  badge.style.display = 'none';
+  badge.textContent = 'Waiting for server';
+  document.body.appendChild(badge);
+  return badge;
+}
+
+function setPlayerStatusBadge(label) {
+  if (!playerStatusBadgeNode) {
+    return;
+  }
+
+  const text = String(label || '').trim() || 'Waiting for server';
+  state.playerMode = text === 'Live' ? 'live' : text === 'Cached' ? 'cached' : 'waiting';
+  playerStatusBadgeNode.textContent = text;
+  playerStatusBadgeNode.style.display = 'block';
+  playerStatusBadgeNode.style.borderColor =
+    text === 'Live'
+      ? 'rgba(34, 197, 94, 0.35)'
+      : text === 'Cached'
+        ? 'rgba(251, 191, 36, 0.38)'
+        : 'rgba(255, 255, 255, 0.16)';
+  playerStatusBadgeNode.style.color =
+    text === 'Live'
+      ? '#bbf7d0'
+      : text === 'Cached'
+        ? '#fde68a'
+        : '#e5e7eb';
+}
+
+function getReportItemType(item) {
+  return item?.playlistType === 'ad' ? 'ad' : 'movie';
+}
+
+function getReportItemId(item) {
+  return item?.id === undefined || item?.id === null ? '' : String(item.id);
+}
+
+function getReportMetadata(item) {
+  const metadata = {};
+
+  if (item?.type) {
+    metadata.asset_type = item.type;
+  }
+
+  if (item?.file) {
+    metadata.file = item.file;
+  }
+
+  if (item?.posterPath) {
+    metadata.poster_path = item.posterPath;
+  }
+
+  if (item?.status) {
+    metadata.status = item.status;
+  }
+
+  if (item?.screenTargets && item.screenTargets.length > 0) {
+    metadata.screen_targets = item.screenTargets;
+  }
+
+  return metadata;
+}
+
+function buildPlaybackSessionId(item, startedAt) {
+  const screen = detectPlayerScreen();
+  const itemType = getReportItemType(item);
+  const itemId = getReportItemId(item);
+
+  return [screen, itemType, itemId, startedAt]
+    .map((part) => encodeURIComponent(String(part ?? '')))
+    .join('|');
+}
+
+function buildReportPayload(item, extra = {}) {
+  const screen = detectPlayerScreen();
+  const startedAt = extra.started_at || reportState.currentStartedAt || new Date().toISOString();
+  const payload = {
+    screen,
+    item_type: getReportItemType(item),
+    item_id: getReportItemId(item),
+    item_title: item?.title || '',
+    started_at: startedAt,
+    status: extra.status,
+    playback_session_id: extra.playback_session_id || reportState.currentSessionId || '',
+    player_path: window.location?.pathname || '',
+  };
+
+  if (extra.ended_at) {
+    payload.ended_at = extra.ended_at;
+  }
+
+  if (extra.duration_seconds !== undefined) {
+    payload.duration_seconds = extra.duration_seconds;
+  }
+
+  const metadata = extra.metadata || getReportMetadata(item);
+  if (metadata && Object.keys(metadata).length > 0) {
+    payload.metadata = metadata;
+  }
+
+  return payload;
+}
+
+function postReport(path, payload) {
+  if (!path) {
+    return;
+  }
+
+  fetch(`${REPORT_ENDPOINT_BASE}${path}`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(payload),
+    keepalive: true,
+  }).catch(() => {});
+}
+
+function beginPlaybackReport(item, playbackToken) {
+  touchPlaybackActivity();
+  reportState.currentItem = item || null;
+  reportState.currentStartedAt = new Date().toISOString();
+  reportState.currentToken = playbackToken;
+  reportState.currentSessionId = buildPlaybackSessionId(item, reportState.currentStartedAt);
+  postReport('/playback/start', buildReportPayload(item, {
+    started_at: reportState.currentStartedAt,
+    playback_session_id: reportState.currentSessionId,
+  }));
+  sendHeartbeatReport();
+}
+
+function finishPlaybackReport(playbackToken, status = 'played', extra = {}) {
+  if (!reportState.currentItem) {
+    return;
+  }
+
+  if (playbackToken !== undefined && reportState.currentToken !== playbackToken) {
+    return;
+  }
+
+  const item = reportState.currentItem;
+  const startedAt = reportState.currentStartedAt || new Date().toISOString();
+  const endedAt = extra.ended_at || new Date().toISOString();
+  const startedTime = Date.parse(startedAt);
+  const endedTime = Date.parse(endedAt);
+  const durationSeconds = extra.duration_seconds !== undefined
+    ? extra.duration_seconds
+    : (Number.isFinite(startedTime) && Number.isFinite(endedTime) && endedTime > startedTime
+        ? Math.max(1, Math.round((endedTime - startedTime) / 1000))
+        : undefined);
+
+  const payload = buildReportPayload(item, {
+    started_at: startedAt,
+    ended_at: endedAt,
+    duration_seconds: durationSeconds,
+    status,
+    playback_session_id: reportState.currentSessionId,
+    metadata: extra.metadata,
+  });
+
+  if (status === 'failed') {
+    postReport('/playback/failure', payload);
+  } else {
+    postReport('/playback/end', payload);
+  }
+
+  reportState.currentItem = null;
+  reportState.currentStartedAt = null;
+  reportState.currentToken = null;
+  reportState.currentSessionId = null;
+}
+
+function sendHeartbeatReport() {
+  const item = reportState.currentItem;
+  const payload = {
+    screen: detectPlayerScreen(),
+    current_item_type: item ? getReportItemType(item) : '',
+    current_item_id: item ? getReportItemId(item) : '',
+    current_item_title: item?.title || '',
+    player_path: window.location?.pathname || '',
+    status: 'online',
+  };
+
+  postReport('/heartbeat', payload);
+}
+
+function startHeartbeatReportLoop() {
+  clearInterval(reportState.heartbeatTimer);
+  reportState.heartbeatTimer = window.setInterval(sendHeartbeatReport, REPORT_HEARTBEAT_INTERVAL_MS);
+  sendHeartbeatReport();
+}
+
+function touchPlaybackActivity() {
+  state.lastPlaybackActivityAt = Date.now();
+}
+
+function startPlaybackWatchdog() {
+  clearInterval(state.playbackWatchdogTimer);
+  state.playbackWatchdogTimer = window.setInterval(() => {
+    if (Date.now() - state.lastPlaybackActivityAt <= 90000) {
+      return;
+    }
+
+    clearInterval(state.playbackWatchdogTimer);
+    state.playbackWatchdogTimer = null;
+    console.warn('Playback watchdog triggered; reloading cinema player.');
+    location.reload();
+  }, 15000);
+}
+
+function sendPlayerHeartbeat() {
+  fetch('/api/player/heartbeat', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      screen: detectPlayerScreen(),
+      page_path: window.location?.pathname || '',
+      screen_name: getPlayerScreenName(),
+      player_mode: state.playerMode,
+      timestamp: new Date().toISOString(),
+    }),
+    keepalive: true,
+  }).catch(() => {});
+}
 
 function createAdOverlay() {
   if (!playerNode) {
@@ -101,110 +416,6 @@ function createAdOverlay() {
   overlay.appendChild(video);
   playerNode.appendChild(overlay);
   return overlay;
-}
-
-function formatTodayString() {
-  const now = new Date();
-  const weekday = now.toLocaleDateString('en-US', { weekday: 'long' });
-  const day = String(now.getDate()).padStart(2, '0');
-  const month = now.toLocaleDateString('en-US', { month: 'long' });
-  const year = now.getFullYear();
-  return `${weekday}, ${day} ${month} ${year}`;
-}
-
-function parseDateLabel(dateLabel) {
-  const match = String(dateLabel || '').trim().match(/^[A-Za-z]+,\s+(\d{1,2})\s+([A-Za-z]+)\s+(\d{4})$/);
-  if (!match) {
-    return null;
-  }
-
-  const day = Number(match[1]);
-  const monthLabel = match[2].toLowerCase();
-  const year = Number(match[3]);
-  const monthIndex = {
-    january: 0,
-    february: 1,
-    march: 2,
-    april: 3,
-    may: 4,
-    june: 5,
-    july: 6,
-    august: 7,
-    september: 8,
-    october: 9,
-    november: 10,
-    december: 11,
-  }[monthLabel];
-
-  if (!Number.isInteger(day) || monthIndex === undefined || !Number.isInteger(year)) {
-    return null;
-  }
-
-  return new Date(year, monthIndex, day);
-}
-
-function parseTimeLabel(timeLabel) {
-  const match = String(timeLabel || '').trim().match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/i);
-  if (!match) {
-    return null;
-  }
-
-  let hours = Number(match[1]);
-  const minutes = Number(match[2]);
-  const meridiem = match[3].toUpperCase();
-
-  if (meridiem === 'PM' && hours !== 12) {
-    hours += 12;
-  }
-
-  if (meridiem === 'AM' && hours === 12) {
-    hours = 0;
-  }
-
-  return { hours, minutes };
-}
-
-function buildLocalDateTime(dateLabel, timeLabel) {
-  const showDate = parseDateLabel(dateLabel);
-  const showTime = parseTimeLabel(timeLabel);
-
-  if (!showDate || !showTime) {
-    return null;
-  }
-
-  return new Date(
-    showDate.getFullYear(),
-    showDate.getMonth(),
-    showDate.getDate(),
-    showTime.hours,
-    showTime.minutes,
-    0,
-    0
-  );
-}
-
-function filterTodayShowtimes(showtimesByDate, now = new Date()) {
-  const todayLabel = formatTodayString();
-  const todayEntry = (Array.isArray(showtimesByDate) ? showtimesByDate : []).find((entry) => entry?.date === todayLabel);
-  if (!todayEntry) {
-    return [];
-  }
-
-  const times = (Array.isArray(todayEntry?.times) ? todayEntry.times : [])
-    .filter(Boolean)
-    .filter((time) => {
-      const showDateTime = buildLocalDateTime(todayEntry.date, time);
-      return showDateTime ? showDateTime.getTime() > now.getTime() : false;
-    });
-
-  if (times.length === 0) {
-    return [];
-  }
-
-  return [{
-    ...todayEntry,
-    times,
-  }];
 }
 
 function filterNowShowingMovies(movies, now = new Date()) {
@@ -341,9 +552,23 @@ function applyPlayerSettings(settings) {
       ? Number(settings.coming_soon_duration_seconds)
       : 5,
     enable_ads: settings?.enable_ads !== false,
+    ads_enabled: settings?.ads_enabled !== false,
     ad_frequency_movies: Number.isFinite(Number(settings?.ad_frequency_movies))
       ? Math.min(10, Math.max(1, Number(settings.ad_frequency_movies)))
       : 2,
+    ad_break_interval_seconds: Number.isFinite(Number(settings?.ad_break_interval_seconds))
+      ? Number(settings.ad_break_interval_seconds)
+      : 240,
+    ads_per_break: Number.isFinite(Number(settings?.ads_per_break))
+      ? Number(settings.ads_per_break)
+      : 2,
+    max_video_ad_seconds: Number.isFinite(Number(settings?.max_video_ad_seconds))
+      ? Number(settings.max_video_ad_seconds)
+      : 15,
+    default_image_ad_seconds: Number.isFinite(Number(settings?.default_image_ad_seconds))
+      ? Number(settings.default_image_ad_seconds)
+      : 10,
+    house_ad_fallback_enabled: settings?.house_ad_fallback_enabled !== false,
   };
 
   const root = document.documentElement;
@@ -386,7 +611,9 @@ function normalizeAds(data) {
       title: ad.title || 'Untitled Ad',
       file: ad.file,
       type: ad.type,
-      duration: Number.isFinite(Number(ad.duration)) ? Number(ad.duration) : null,
+      duration: Number.isFinite(Number(ad.duration_seconds))
+        ? Number(ad.duration_seconds)
+        : (Number.isFinite(Number(ad.duration)) ? Number(ad.duration) : null),
       screenTargets: Array.isArray(ad.screenTargets)
         ? ad.screenTargets
         : (Array.isArray(ad.screen_targets) ? ad.screen_targets : []),
@@ -395,7 +622,105 @@ function normalizeAds(data) {
 }
 
 function isAdsEnabledForScreen(settings) {
-  return settings?.cinema_ads_enabled !== false;
+  return settings?.ads_enabled !== false
+    && settings?.enable_ads !== false
+    && settings?.cinema_ads_enabled !== false;
+}
+
+function getAdBreakConfig() {
+  const settings = state.playerSettings || {};
+
+  return {
+    adsEnabled: settings?.ads_enabled !== false
+      && settings?.enable_ads !== false
+      && settings?.cinema_ads_enabled !== false,
+    intervalSeconds: Number.isFinite(Number(settings.ad_break_interval_seconds))
+      ? Math.max(15, Math.min(3600, Number(settings.ad_break_interval_seconds)))
+      : 240,
+    adsPerBreak: Number.isFinite(Number(settings.ads_per_break))
+      ? Math.max(1, Math.min(10, Number(settings.ads_per_break)))
+      : 2,
+    maxVideoAdSeconds: Number.isFinite(Number(settings.max_video_ad_seconds))
+      ? Math.max(1, Math.min(120, Number(settings.max_video_ad_seconds)))
+      : 15,
+    defaultImageAdSeconds: Number.isFinite(Number(settings.default_image_ad_seconds))
+      ? Math.max(1, Math.min(120, Number(settings.default_image_ad_seconds)))
+      : 10,
+    houseAdFallbackEnabled: settings?.house_ad_fallback_enabled !== false,
+  };
+}
+
+function getAdPlaybackDurationSeconds(adItem) {
+  const config = getAdBreakConfig();
+  const rawDuration = Number(adItem?.duration);
+  const duration = Number.isFinite(rawDuration) && rawDuration > 0 ? rawDuration : null;
+
+  if (adItem?.type === 'video') {
+    const videoDuration = duration || config.maxVideoAdSeconds;
+    return Math.max(1, Math.min(videoDuration, config.maxVideoAdSeconds));
+  }
+
+  return Math.max(1, duration || config.defaultImageAdSeconds);
+}
+
+function getNextAdBreakItems() {
+  const config = getAdBreakConfig();
+  if (!config.adsEnabled) {
+    return [];
+  }
+
+  const playableAds = getPlayableAds(state.adItems);
+  if (playableAds.length === 0) {
+    return [];
+  }
+
+  const selectionCount = Math.min(config.adsPerBreak, playableAds.length);
+  const startIndex = ((state.adRotationCursor % playableAds.length) + playableAds.length) % playableAds.length;
+  const selected = [];
+
+  for (let offset = 0; offset < selectionCount; offset += 1) {
+    const index = (startIndex + offset) % playableAds.length;
+    selected.push(playableAds[index]);
+  }
+
+  state.adRotationCursor = (startIndex + selected.length) % playableAds.length;
+  return selected;
+}
+
+function startAdBreakPlayback(resumeIndex) {
+  const config = getAdBreakConfig();
+  const nextAdItems = getNextAdBreakItems();
+
+  if (nextAdItems.length === 0) {
+    state.contentElapsedSeconds = Math.max(0, state.contentElapsedSeconds - config.intervalSeconds);
+    resumeContentPlayback(resumeIndex);
+    return;
+  }
+
+  state.adBreakActive = true;
+  state.adBreakResumeIndex = resumeIndex;
+  state.combinedPlaylist = nextAdItems;
+  state.playbackIndex = 0;
+  runCombinedPlaybackLoop();
+}
+
+function resumeContentPlayback(resumeIndex = state.adBreakResumeIndex) {
+  const contentItems = Array.isArray(state.moviePlaylistItems) ? state.moviePlaylistItems : [];
+  if (contentItems.length === 0) {
+    state.adBreakActive = false;
+    state.adBreakResumeIndex = 0;
+    state.combinedPlaylist = [];
+    hideAdOverlay();
+    return;
+  }
+
+  const normalizedResumeIndex = ((resumeIndex % contentItems.length) + contentItems.length) % contentItems.length;
+  state.adBreakActive = false;
+  state.adBreakResumeIndex = 0;
+  state.combinedPlaylist = contentItems;
+  state.playbackIndex = normalizedResumeIndex;
+  hideAdOverlay();
+  runCombinedPlaybackLoop();
 }
 
 function normalizeScreenLabel(label) {
@@ -417,6 +742,14 @@ function detectPlayerScreen() {
   if (path === '/player/cinema-3x2') return 'cinema-3x2';
   if (path === '/player/cinema') return 'cinema';
   return 'cinema';
+}
+
+function getPlayerScreenName() {
+  try {
+    return new URLSearchParams(window.location?.search || '').get('screen_name')?.trim() || '';
+  } catch (error) {
+    return '';
+  }
 }
 
 function isAdTargetedToScreen(ad, screen) {
@@ -450,54 +783,26 @@ function getPlayableAds(adItems) {
 
 function buildCombinedPlaylist(movieItems, adItems, playerSettings) {
   const movies = Array.isArray(movieItems) ? movieItems : [];
-  const ads = Array.isArray(adItems) ? adItems : [];
-  const enableAds = playerSettings?.enable_ads !== false;
-  const frequency = Number.isFinite(Number(playerSettings?.ad_frequency_movies))
-    ? Math.min(10, Math.max(1, Number(playerSettings.ad_frequency_movies)))
-    : 2;
-
-  let combined;
-
-  if (!enableAds || ads.length === 0 || movies.length === 0) {
-    combined = [...movies];
-  } else {
-    combined = [];
-    let adIndex = 0;
-
-    for (let movieIndex = 0; movieIndex < movies.length; movieIndex += 1) {
-      combined.push(movies[movieIndex]);
-
-      if ((movieIndex + 1) % frequency === 0) {
-        combined.push({
-          ...ads[adIndex % ads.length],
-          playlistIndex: combined.length,
-        });
-        adIndex += 1;
-      }
-    }
-  }
-
-  console.log('[Cinema Debug] buildCombinedPlaylist input movie count:', movies.length);
-  console.log('[Cinema Debug] buildCombinedPlaylist input ad count:', ads.length);
-  console.log('[Cinema Debug] buildCombinedPlaylist final count:', combined.length);
-  console.log('[Cinema Debug] buildCombinedPlaylist final entries:', combined.map((item) => ({
-    title: item?.title || '',
-    type: item?.type || item?.itemType || item?.entityKind || '',
-    file_path: item?.file_path || item?.src || item?.thumbnailPath || '',
-    screen_targets: item?.screen_targets || item?.screenTargets || '',
-  })));
-
-  return combined;
+  void adItems;
+  void playerSettings;
+  return [...movies];
 }
 
 function rebuildCombinedPlaylist() {
   const previousItem = state.combinedPlaylist[state.playbackIndex];
   const previousIndex = state.playbackIndex;
-  state.combinedPlaylist = buildCombinedPlaylist(
+  const nextPlaylist = buildCombinedPlaylist(
     state.moviePlaylistItems,
-    getPlayableAds(state.adItems),
+    state.adItems,
     state.playerSettings
   );
+
+  if (state.adBreakActive) {
+    state.moviePlaylistItems = nextPlaylist;
+    return;
+  }
+
+  state.combinedPlaylist = nextPlaylist;
 
   if (!previousItem) {
     state.playbackIndex = 0;
@@ -568,6 +873,7 @@ function hideAdOverlay() {
     videoNode.removeAttribute('src');
     videoNode.load();
   }
+  touchPlaybackActivity();
 }
 
 function setAdMode(isAd) {
@@ -578,14 +884,24 @@ function setAdMode(isAd) {
 
 function showImageAd(adItem, playbackToken) {
   if (!adOverlayNode) {
-    advanceCombinedPlayback(playbackToken);
+    finishPlaybackReport(playbackToken, 'failed', {
+      metadata: {
+        reason: 'ad overlay unavailable',
+      },
+    });
+    advanceCombinedPlayback(playbackToken, { skipFinish: true });
     return;
   }
 
   const imageNode = adOverlayNode.querySelector('img');
   const videoNode = adOverlayNode.querySelector('video');
   if (!imageNode) {
-    advanceCombinedPlayback(playbackToken);
+    finishPlaybackReport(playbackToken, 'failed', {
+      metadata: {
+        reason: 'ad image node unavailable',
+      },
+    });
+    advanceCombinedPlayback(playbackToken, { skipFinish: true });
     return;
   }
 
@@ -602,6 +918,7 @@ function showImageAd(adItem, playbackToken) {
     }
 
     state.playbackTimer = window.setTimeout(() => {
+      finishPlaybackReport(playbackToken, 'played');
       advanceCombinedPlayback(playbackToken);
     }, getPlaylistItemDurationSeconds(adItem) * 1000);
   };
@@ -618,6 +935,7 @@ function showImageAd(adItem, playbackToken) {
     adOverlayNode.style.display = 'flex';
     adOverlayNode.setAttribute('aria-hidden', 'false');
     setAdMode(true);
+    touchPlaybackActivity();
     handleAdvance();
   };
 
@@ -625,16 +943,30 @@ function showImageAd(adItem, playbackToken) {
     imageNode.onload = null;
     imageNode.onerror = null;
     hideAdOverlay();
+    finishPlaybackReport(playbackToken, 'failed', {
+      metadata: {
+        reason: 'image failed to load',
+      },
+    });
     markAdFailed(adItem, 'image failed to load');
-    advanceCombinedPlayback(playbackToken);
+    advanceCombinedPlayback(playbackToken, { skipFinish: true });
   };
 
   imageNode.src = adItem.file;
 }
 
-function advanceCombinedPlayback(expectedToken) {
+function advanceCombinedPlayback(expectedToken, options = {}) {
   if (expectedToken !== undefined && expectedToken !== state.playbackToken) {
     return;
+  }
+
+  const currentIndex = Array.isArray(state.combinedPlaylist) && state.combinedPlaylist.length > 0
+    ? ((state.playbackIndex % state.combinedPlaylist.length) + state.combinedPlaylist.length) % state.combinedPlaylist.length
+    : 0;
+  const currentItem = state.combinedPlaylist[currentIndex];
+
+  if (!options.skipFinish) {
+    finishPlaybackReport(expectedToken, 'played');
   }
 
   if (!Array.isArray(state.combinedPlaylist) || state.combinedPlaylist.length === 0) {
@@ -642,20 +974,52 @@ function advanceCombinedPlayback(expectedToken) {
     return;
   }
 
-  state.playbackIndex = (state.playbackIndex + 1) % state.combinedPlaylist.length;
+  if (currentItem?.playlistType === 'ad' && state.adBreakActive) {
+    const nextAdIndex = currentIndex + 1;
+    if (nextAdIndex < state.combinedPlaylist.length) {
+      state.playbackIndex = nextAdIndex;
+      runCombinedPlaybackLoop();
+      return;
+    }
+
+    resumeContentPlayback();
+    return;
+  }
+
+  if (currentItem?.playlistType !== 'ad') {
+    state.contentElapsedSeconds += Math.max(1, getPlaylistItemDurationSeconds(currentItem));
+    const config = getAdBreakConfig();
+    if (config.adsEnabled && state.contentElapsedSeconds >= config.intervalSeconds) {
+      state.contentElapsedSeconds = Math.max(0, state.contentElapsedSeconds - config.intervalSeconds);
+      startAdBreakPlayback(currentIndex + 1);
+      return;
+    }
+  }
+
+  state.playbackIndex = (currentIndex + 1) % state.combinedPlaylist.length;
   runCombinedPlaybackLoop();
 }
 
 function showVideoAd(adItem, playbackToken) {
   if (!adOverlayNode) {
-    advanceCombinedPlayback(playbackToken);
+    finishPlaybackReport(playbackToken, 'failed', {
+      metadata: {
+        reason: 'ad overlay unavailable',
+      },
+    });
+    advanceCombinedPlayback(playbackToken, { skipFinish: true });
     return;
   }
 
   const imageNode = adOverlayNode.querySelector('img');
   const videoNode = adOverlayNode.querySelector('video');
   if (!videoNode) {
-    advanceCombinedPlayback(playbackToken);
+    finishPlaybackReport(playbackToken, 'failed', {
+      metadata: {
+        reason: 'ad video node unavailable',
+      },
+    });
+    advanceCombinedPlayback(playbackToken, { skipFinish: true });
     return;
   }
 
@@ -664,15 +1028,30 @@ function showVideoAd(adItem, playbackToken) {
     imageNode.removeAttribute('src');
   }
 
-  const handleAdvance = () => {
+  let advanced = false;
+  const advanceOnce = () => {
+    if (advanced || playbackToken !== state.playbackToken) {
+      return;
+    }
+
+    advanced = true;
+    clearPlaybackTimer();
+    videoNode.onended = null;
+    videoNode.onerror = null;
+    finishPlaybackReport(playbackToken, 'played');
     advanceCombinedPlayback(playbackToken);
   };
 
-  videoNode.onended = handleAdvance;
+  videoNode.onended = advanceOnce;
   videoNode.onerror = () => {
     hideAdOverlay();
+    finishPlaybackReport(playbackToken, 'failed', {
+      metadata: {
+        reason: 'video playback failed',
+      },
+    });
     markAdFailed(adItem, 'video playback failed');
-    handleAdvance();
+    advanceCombinedPlayback(playbackToken, { skipFinish: true });
   };
   videoNode.onloadeddata = () => {
     if (playbackToken !== state.playbackToken) {
@@ -684,6 +1063,25 @@ function showVideoAd(adItem, playbackToken) {
     adOverlayNode.style.display = 'flex';
     adOverlayNode.setAttribute('aria-hidden', 'false');
     setAdMode(true);
+    touchPlaybackActivity();
+    state.playbackTimer = window.setTimeout(() => {
+      if (advanced || playbackToken !== state.playbackToken) {
+        return;
+      }
+
+      try {
+        videoNode.pause();
+      } catch (error) {
+        // Ignore pause failures.
+      }
+      advanceOnce();
+    }, getPlaylistItemDurationSeconds(adItem) * 1000);
+  };
+  videoNode.onplaying = () => {
+    touchPlaybackActivity();
+  };
+  videoNode.ontimeupdate = () => {
+    touchPlaybackActivity();
   };
 
   videoNode.src = adItem.file;
@@ -693,15 +1091,20 @@ function showVideoAd(adItem, playbackToken) {
   if (playPromise && typeof playPromise.catch === 'function') {
     playPromise.catch(() => {
       hideAdOverlay();
+      finishPlaybackReport(playbackToken, 'failed', {
+        metadata: {
+          reason: 'video autoplay failed',
+        },
+      });
       markAdFailed(adItem, 'video autoplay failed');
-      handleAdvance();
+      advanceCombinedPlayback(playbackToken, { skipFinish: true });
     });
   }
 }
 
 function getPlaylistItemDurationSeconds(item) {
   if (item?.playlistType === 'ad') {
-    return Math.max(1, Number(item.duration) || 10);
+    return getAdPlaybackDurationSeconds(item);
   }
 
   return item?.status === 'Coming Soon'
@@ -718,14 +1121,29 @@ function runCombinedPlaybackLoop() {
   clearPlaybackTimer();
 
   if (!Array.isArray(state.combinedPlaylist) || state.combinedPlaylist.length === 0) {
+    if (reportState.currentItem) {
+      finishPlaybackReport(state.playbackToken, 'interrupted', {
+        metadata: {
+          reason: 'playlist cleared',
+        },
+      });
+    }
     hideAdOverlay();
     return;
   }
 
   const currentIndex = ((state.playbackIndex % state.combinedPlaylist.length) + state.combinedPlaylist.length) % state.combinedPlaylist.length;
   const currentItem = state.combinedPlaylist[currentIndex];
+  if (reportState.currentItem) {
+    finishPlaybackReport(state.playbackToken, 'interrupted', {
+      metadata: {
+        reason: 'playlist refreshed',
+      },
+    });
+  }
   state.playbackToken += 1;
   const playbackToken = state.playbackToken;
+  beginPlaybackReport(currentItem, playbackToken);
 
   if (currentItem?.playlistType === 'ad' && currentItem.type === 'image') {
     showImageAd(currentItem, playbackToken);
@@ -739,6 +1157,7 @@ function runCombinedPlaybackLoop() {
 
   hideAdOverlay();
   state.playbackTimer = window.setTimeout(() => {
+    finishPlaybackReport(playbackToken, 'played');
     advanceCombinedPlayback(playbackToken);
   }, getPlaylistItemDurationSeconds(currentItem) * 1000);
 }
@@ -930,22 +1349,53 @@ function updateClock() {
 
 async function pollGlobalRefreshToken() {
   try {
-    const response = await fetch('/api/player-settings/refresh-token', { cache: 'no-store' });
+    const query = new URLSearchParams({
+      screen: detectPlayerScreen(),
+      page_path: window.location?.pathname || '',
+    });
+    const screenName = getPlayerScreenName();
+    if (screenName) {
+      query.set('screen_name', screenName);
+    }
+
+    const response = await fetch(`/api/player-settings/refresh-token?${query.toString()}`, { cache: 'no-store' });
     if (!response.ok) {
       return;
     }
 
     const payload = await response.json();
     const refreshToken = String(payload?.refreshToken || '');
+    const screenRefreshToken = String(payload?.screenRefreshToken || '');
+    const groupRefreshToken = String(payload?.groupRefreshToken || '');
+    const siteRefreshToken = String(payload?.siteRefreshToken || '');
+    let shouldReload = false;
 
     if (state.lastRefreshToken === null) {
       state.lastRefreshToken = refreshToken;
-      return;
+    } else if (refreshToken !== state.lastRefreshToken) {
+      shouldReload = true;
     }
 
-    if (refreshToken !== state.lastRefreshToken) {
+    if (state.lastScreenRefreshToken === null) {
+      state.lastScreenRefreshToken = screenRefreshToken;
+    } else if (screenRefreshToken !== state.lastScreenRefreshToken) {
+      shouldReload = true;
+    }
+
+    if (state.lastGroupRefreshToken === null) {
+      state.lastGroupRefreshToken = groupRefreshToken;
+    } else if (groupRefreshToken !== state.lastGroupRefreshToken) {
+      shouldReload = true;
+    }
+
+    if (state.lastSiteRefreshToken === null) {
+      state.lastSiteRefreshToken = siteRefreshToken;
+    } else if (siteRefreshToken !== state.lastSiteRefreshToken) {
+      shouldReload = true;
+    }
+
+    if (shouldReload) {
       window.location.reload();
-      return;
     }
   } catch (error) {
     console.warn('Failed to check refresh token', error);
@@ -956,10 +1406,13 @@ async function fetchCinemaMovies() {
   try {
     const screen = detectPlayerScreen();
     const moviesResponse = await fetch(`/api/cinema-movies?screen=${screen}`, { cache: 'no-store' });
+    if (!moviesResponse.ok) {
+      throw new Error(`HTTP ${moviesResponse.status}`);
+    }
 
     const result = await moviesResponse.json();
     const data = result.data || {};
-    const now = new Date();
+    const now = data.serverNow ? new Date(data.serverNow) : new Date();
     const nowShowing = filterNowShowingMovies(data.nowShowing || [], now);
     const comingSoon = Array.isArray(data.comingSoon) ? data.comingSoon : [];
     applyPlayerSettings(data.playerSettings);
@@ -970,6 +1423,11 @@ async function fetchCinemaMovies() {
       ads = adsResponse.ok ? normalizeAds(await adsResponse.json()) : [];
       console.log('Cinema ads payload:', ads);
     }
+
+    const cachedPayload = { data, ads };
+    writePlayerCache(cachedPayload);
+    console.log('fresh data loaded', { player: 'cinema' });
+    setPlayerStatusBadge('Live');
 
     state.moviePlaylistItems = normalizeMoviePlaylistItems(nowShowing, comingSoon);
     state.adItems = ads;
@@ -984,19 +1442,55 @@ async function fetchCinemaMovies() {
     })));
 
     applyCinemaBoards(nowShowing, comingSoon);
-    runCombinedPlaybackLoop();
+    if (!state.adBreakActive) {
+      runCombinedPlaybackLoop();
+    }
     state.hasRenderedData = true;
+    startHeartbeatReportLoop();
 
     if (statusNode) {
       statusNode.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     }
   } catch (error) {
     console.error('Failed to load cinema movies', error);
+    const cachedPayload = readPlayerCache();
+    if (cachedPayload && cachedPayload.data !== undefined) {
+      console.log('cached data used', { player: 'cinema' });
+      setPlayerStatusBadge('Cached');
+      const data = cachedPayload.data || {};
+      const now = data.serverNow ? new Date(data.serverNow) : new Date();
+      const nowShowing = filterNowShowingMovies(data.nowShowing || [], now);
+      const comingSoon = Array.isArray(data.comingSoon) ? data.comingSoon : [];
+      applyPlayerSettings(data.playerSettings);
+      state.moviePlaylistItems = normalizeMoviePlaylistItems(nowShowing, comingSoon);
+      state.adItems = Array.isArray(cachedPayload.ads) ? cachedPayload.ads : [];
+      rebuildCombinedPlaylist();
+      logCombinedPlaylist(state.combinedPlaylist, 'Cinema Landscape');
+      const playlistItems = state.combinedPlaylist;
+      console.log('Cinema final playlist:', playlistItems.map((item) => ({
+        title: item.title,
+        type: item.type || item.itemType || item.entityKind,
+        file_path: item.file_path || item.src || item.thumbnailPath || '',
+        status: item.status || '',
+      })));
+
+      applyCinemaBoards(nowShowing, comingSoon);
+      if (!state.adBreakActive) {
+        runCombinedPlaybackLoop();
+      }
+      state.hasRenderedData = true;
+      startHeartbeatReportLoop();
+
+      if (statusNode) {
+        statusNode.textContent = now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      }
+      return;
+    }
+
+    console.log('no cache available', { player: 'cinema' });
     if (!state.hasRenderedData) {
       applyCinemaBoards([], []);
-      if (statusNode) {
-        statusNode.textContent = 'Unavailable';
-      }
+      showWaitingForServerMessage();
     }
   }
 }
@@ -1007,3 +1501,6 @@ fetchCinemaMovies();
 state.refreshTimer = window.setInterval(fetchCinemaMovies, REFRESH_INTERVAL_MS);
 void pollGlobalRefreshToken();
 state.refreshSignalTimer = window.setInterval(pollGlobalRefreshToken, GLOBAL_REFRESH_CHECK_INTERVAL_MS);
+startPlaybackWatchdog();
+sendPlayerHeartbeat();
+window.setInterval(sendPlayerHeartbeat, PLAYER_HEARTBEAT_INTERVAL_MS);

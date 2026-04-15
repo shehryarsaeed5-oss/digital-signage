@@ -82,6 +82,26 @@ const valueFor = (settings, key, fallback) => (
                 <span>Ad Frequency (movies)</span>
                 <input type="number" name="ad_frequency_movies" min="1" max="10" step="1" value="<%= valueFor(card.settings, 'ad_frequency_movies', 2) %>" required>
               </label>
+              <label>
+                <span>Ad Break Interval (seconds)</span>
+                <input type="number" name="ad_break_interval_seconds" min="15" max="3600" step="1" value="<%= valueFor(card.settings, 'ad_break_interval_seconds', 240) %>" required>
+              </label>
+              <label>
+                <span>Ads Per Break</span>
+                <input type="number" name="ads_per_break" min="1" max="10" step="1" value="<%= valueFor(card.settings, 'ads_per_break', 2) %>" required>
+              </label>
+              <label>
+                <span>Max Video Ad Seconds</span>
+                <input type="number" name="max_video_ad_seconds" min="1" max="120" step="1" value="<%= valueFor(card.settings, 'max_video_ad_seconds', 15) %>" required>
+              </label>
+              <label>
+                <span>Default Image Ad Seconds</span>
+                <input type="number" name="default_image_ad_seconds" min="1" max="120" step="1" value="<%= valueFor(card.settings, 'default_image_ad_seconds', 10) %>" required>
+              </label>
+              <label class="checkbox-field">
+                <span>House Ad Fallback</span>
+                <input type="checkbox" name="house_ad_fallback_enabled" <%= valueFor(card.settings, 'house_ad_fallback_enabled', true) ? 'checked' : '' %>>
+              </label>
               <% if (card.screen === 'cinema' || card.screen === 'cinema-3x2') { %>
                 <label>
                   <span>Poster Width (%)</span>

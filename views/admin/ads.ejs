@@ -1,5 +1,13 @@
 <%- include('partials/layout-start', { pageTitle: 'Ads Manager' }) %>
-<header class="page-header">
+<% const formatDuration = (value) => {
+     const numericValue = Number.parseInt(value, 10);
+     const totalSeconds = Number.isFinite(numericValue) && numericValue > 0 ? numericValue : 0;
+     const minutes = Math.floor(totalSeconds / 60);
+     const seconds = totalSeconds % 60;
+     return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+   };
+%>
+  <header class="page-header">
     <div class="page-header-copy">
       <h1>Ads Manager</h1>
       <p class="muted">Manage uploaded ads, review type and order, compress MP4 files for signage playback, and control whether each ad is active.</p>
@@ -98,10 +106,50 @@ const formatScreenTarget = (value) => {
       overflow-x: auto;
     }
 
+    .ads-bulk-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin: 0 0 14px;
+    }
+
+    .ads-targets-control {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+      margin: 0 0 12px;
+      padding: 12px 14px;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .ads-targets-control label {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: #e2e8f0;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
+    .ads-targets-control input[type="checkbox"] {
+      width: 16px;
+      height: 16px;
+      margin: 0;
+    }
+
+    .ads-bulk-actions .bulk-note {
+      color: #cbd5e1;
+      font-size: 13px;
+      font-weight: 600;
+    }
+
     .ads-table {
       width: 100%;
       border-collapse: collapse;
-      min-width: 1120px;
+      min-width: 1180px;
     }
 
     .ads-table th,
@@ -126,6 +174,18 @@ const formatScreenTarget = (value) => {
 
     .ads-table .preview-cell {
       width: 200px;
+    }
+
+    .ads-table .select-cell {
+      width: 52px;
+      text-align: center;
+    }
+
+    .ads-table .select-cell input {
+      width: 18px;
+      height: 18px;
+      margin: 0;
+      vertical-align: middle;
     }
 
     .ads-table .title-cell h2 {
@@ -394,10 +454,29 @@ const formatScreenTarget = (value) => {
       <% if (ads.length === 0) { %>
         <p class="empty-state">No ads uploaded yet.</p>
       <% } else { %>
+        <div class="ads-targets-control" id="bulk-targets-control">
+          <strong>Targets:</strong>
+          <label><input type="checkbox" name="screen_targets" value="cinema" form="bulk-ads-form"> Cinema</label>
+          <label><input type="checkbox" name="screen_targets" value="cinema-3x2" form="bulk-ads-form"> Cinema 3x2</label>
+          <label><input type="checkbox" name="screen_targets" value="cinema-portrait" form="bulk-ads-form"> Cinema Portrait</label>
+          <button type="submit" form="bulk-ads-form" formaction="/admin/ads/bulk-targets">Apply Targets to Selected</button>
+        </div>
+        <div class="ads-bulk-actions">
+          <form id="bulk-ads-form" method="post" action="/admin/ads/bulk-status" style="margin: 0; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+            <button type="submit" name="bulk_status" value="active">Activate Selected</button>
+            <button type="submit" name="bulk_status" value="inactive" class="secondary">Deactivate Selected</button>
+            <button type="submit" formaction="/admin/ads/bulk-duplicate" class="secondary">Duplicate Selected</button>
+            <button type="submit" formaction="/admin/ads/bulk-delete" class="danger-button" onclick="return confirm('Delete selected ads?');">Delete Selected</button>
+          </form>
+          <span class="bulk-note">Use the checkboxes to update multiple ads at once.</span>
+        </div>
         <div class="ads-table-wrap">
           <table class="ads-table">
             <thead>
               <tr>
+                <th scope="col" class="select-cell">
+                  <input type="checkbox" id="ads-select-all" aria-label="Select all ads">
+                </th>
                 <th scope="col">Preview</th>
                 <th scope="col">Title</th>
                 <th scope="col">Type</th>
@@ -411,6 +490,16 @@ const formatScreenTarget = (value) => {
             <tbody>
               <% ads.forEach((ad) => { %>
                 <tr>
+                  <td class="select-cell">
+                    <input
+                      type="checkbox"
+                      name="ad_ids"
+                      value="<%= ad.id %>"
+                      form="bulk-ads-form"
+                      class="ads-select-row"
+                      aria-label="Select <%= ad.title %>"
+                    >
+                  </td>
                   <td class="preview-cell">
                     <div class="ad-preview-shell">
                       <% if (ad.type === 'image') { %>
@@ -431,11 +520,7 @@ const formatScreenTarget = (value) => {
                     <h2><%= ad.title %></h2>
                     <p class="muted">
                       <%= ad.type === 'image' ? 'Image' : 'Video' %>
-                      <% if (ad.type === 'image') { %>
-                        · <%= ad.duration_seconds %>s
-                      <% } else { %>
-                        · plays until end
-                      <% } %>
+                      · <%= formatDuration(ad.duration_seconds) %>
                     </p>
                   </td>
                   <td><%= ad.type %></td>
@@ -480,7 +565,7 @@ const formatScreenTarget = (value) => {
                 </tr>
 
                 <tr class="details-row">
-                  <td colspan="8">
+                  <td colspan="9">
                     <div class="details-panel">
                       <div class="details-grid">
                         <div class="details-block">
@@ -603,4 +688,35 @@ const formatScreenTarget = (value) => {
       <% } %>
     </section>
   </main>
+
+  <script>
+    (function () {
+      const selectAll = document.getElementById('ads-select-all');
+      const rowCheckboxes = Array.from(document.querySelectorAll('.ads-select-row'));
+
+      if (!selectAll || rowCheckboxes.length === 0) {
+        return;
+      }
+
+      const syncSelectAllState = () => {
+        const checkedCount = rowCheckboxes.filter((checkbox) => checkbox.checked).length;
+        selectAll.checked = checkedCount > 0 && checkedCount === rowCheckboxes.length;
+        selectAll.indeterminate = checkedCount > 0 && checkedCount < rowCheckboxes.length;
+      };
+
+      selectAll.addEventListener('change', () => {
+        rowCheckboxes.forEach((checkbox) => {
+          checkbox.checked = selectAll.checked;
+        });
+        syncSelectAllState();
+      });
+
+      rowCheckboxes.forEach((checkbox) => {
+        checkbox.addEventListener('change', syncSelectAllState);
+      });
+
+      syncSelectAllState();
+    })();
+  </script>
+
 <%- include('partials/layout-end') %>

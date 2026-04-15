@@ -1,0 +1,74 @@
+<%- include('partials/layout-start', { pageTitle: 'Screen Status' }) %>
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>Screen Status</h1>
+    <p class="muted">Heartbeat snapshots show the last known player state for each screen.</p>
+  </div>
+  <div class="page-header-actions">
+    <a class="secondary-link" href="/admin/reports">Overview</a>
+    <a class="secondary-link" href="/admin/reports/ads">Ad Performance</a>
+  </div>
+</header>
+
+<main class="admin-grid report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <section class="panel panel-wide">
+    <div class="panel-heading">
+      <div>
+        <h2>Heartbeat Overview</h2>
+        <p class="muted">A screen is treated as online if it reported in the last 90 seconds.</p>
+      </div>
+    </div>
+
+    <% if (!rows || rows.length === 0) { %>
+      <p class="report-empty-state">No heartbeat records have been received yet.</p>
+    <% } else { %>
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th scope="col">Screen</th>
+              <th scope="col">Status</th>
+              <th scope="col">Last Seen</th>
+              <th scope="col">Current Item</th>
+              <th scope="col">Player Path</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach((row) => { %>
+              <tr>
+                <td><strong><%= row.screen %></strong></td>
+                <td><span class="report-status-badge is-<%= row.connection_status === 'online' ? 'online' : 'offline' %>"><%= row.onlineLabel %></span></td>
+                <td><%= row.lastSeenLabel %></td>
+                <td>
+                  <div class="report-meta-list">
+                    <strong><%= row.current_item_title || 'No item reported' %></strong>
+                    <span class="report-meta-text">
+                      <%= row.current_item_type || 'unknown' %>
+                      <% if (row.current_item_id) { %>
+                        · ID: <%= row.current_item_id %>
+                      <% } %>
+                    </span>
+                  </div>
+                </td>
+                <td><span class="report-meta-text"><%= row.player_path || '—' %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('partials/layout-end') %>

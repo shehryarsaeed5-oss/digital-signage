@@ -41,6 +41,7 @@ const SELECTORS = {
   showTimesSection: /(<article id="show-times"[\s\S]*?<\/article>)/i,
   sessionSplit: /<div class="\s*(?:future\s+)?session">/i,
   sessionDate: /<h4[^>]*class="session-date"[^>]*>([\s\S]*?)<\/h4>/i,
+  sessionScreen: /<img[^>]+(?:alt|title)="([^"]+)"[^>]*>/i,
   sessionTime: /<time[^>]*>([\s\S]*?)<\/time>/gi,
 };
 
@@ -344,6 +345,10 @@ function extractOptionalMatch(block, selectorName) {
   return match && match[1] ? match[1] : '';
 }
 
+function normalizeSessionScreenLabel(value) {
+  return stripHtml(String(value || '').replace(/^Image:\s*/i, '')).trim();
+}
+
 function parseShowtimes(showTimesSection) {
   if (!showTimesSection) {
     return [];
@@ -359,6 +364,8 @@ function parseShowtimes(showTimesSection) {
       currentDate = dateText;
     }
 
+    const screenText = normalizeSessionScreenLabel(extractOptionalMatch(sessionBlock, 'sessionScreen'));
+
     const times = [...sessionBlock.matchAll(SELECTORS.sessionTime)]
       .map((timeMatch) => stripHtml(timeMatch[1]))
       .filter(Boolean);
@@ -367,7 +374,8 @@ function parseShowtimes(showTimesSection) {
       continue;
     }
 
-    const existing = sessions.find((entry) => entry.date === currentDate);
+    const normalizedScreen = screenText || null;
+    const existing = sessions.find((entry) => entry.date === currentDate && (entry.screen || null) === normalizedScreen);
     if (existing) {
       existing.times.push(...times);
       continue;
@@ -375,12 +383,14 @@ function parseShowtimes(showTimesSection) {
 
     sessions.push({
       date: currentDate,
+      screen: normalizedScreen,
       times: [...times],
     });
   }
 
   return sessions.map((entry) => ({
     date: entry.date,
+    screen: entry.screen || null,
     times: [...new Set(entry.times)],
   }));
 }
@@ -1017,6 +1027,7 @@ function flattenShowtimes(showtimesByDate = []) {
     (entry.times || []).map((showTime) => ({
       show_date: entry.date,
       show_time: showTime,
+      screen: entry.screen || null,
     }))
   );
 }

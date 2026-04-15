@@ -35,6 +35,11 @@ const SCREEN_PLAYER_SETTING_DEFAULTS = Object.freeze({
   coming_soon_duration_seconds: 5,
   enable_ads: true,
   ad_frequency_movies: 2,
+  ad_break_interval_seconds: 240,
+  ads_per_break: 2,
+  max_video_ad_seconds: 15,
+  default_image_ad_seconds: 10,
+  house_ad_fallback_enabled: true,
   poster_width_percent: 38,
   row_height_percent: 100,
 });
@@ -83,26 +88,34 @@ function parseBooleanSetting(value) {
   return value === 1 || value === '1' || value === true || value === 'true';
 }
 
+function parseIntegerSetting(value, fallback, { min = Number.NEGATIVE_INFINITY, max = Number.POSITIVE_INFINITY } = {}) {
+  const numericValue = Number.parseInt(value, 10);
+  if (Number.isFinite(numericValue) && numericValue >= min && numericValue <= max) {
+    return numericValue;
+  }
+
+  return fallback;
+}
+
 function rowToScreenPlayerSettings(row) {
   if (!row) {
     return null;
   }
 
-  const posterWidth = Number.parseInt(row.poster_width_percent, 10);
-  const rowHeight = Number.parseInt(row.row_height_percent, 10);
-
   return {
     screen: row.screen,
-    now_showing_duration_seconds: Number.parseInt(row.now_showing_duration_seconds, 10),
-    coming_soon_duration_seconds: Number.parseInt(row.coming_soon_duration_seconds, 10),
+    now_showing_duration_seconds: parseIntegerSetting(row.now_showing_duration_seconds, SCREEN_PLAYER_SETTING_DEFAULTS.now_showing_duration_seconds, { min: 1, max: 60 }),
+    coming_soon_duration_seconds: parseIntegerSetting(row.coming_soon_duration_seconds, SCREEN_PLAYER_SETTING_DEFAULTS.coming_soon_duration_seconds, { min: 1, max: 60 }),
     enable_ads: parseBooleanSetting(row.enable_ads),
-    ad_frequency_movies: Number.parseInt(row.ad_frequency_movies, 10),
-    poster_width_percent: Number.isFinite(posterWidth)
-      ? posterWidth
-      : SCREEN_PLAYER_SETTING_DEFAULTS.poster_width_percent,
-    row_height_percent: Number.isFinite(rowHeight)
-      ? rowHeight
-      : SCREEN_PLAYER_SETTING_DEFAULTS.row_height_percent,
+    ads_enabled: parseBooleanSetting(row.enable_ads),
+    ad_frequency_movies: parseIntegerSetting(row.ad_frequency_movies, SCREEN_PLAYER_SETTING_DEFAULTS.ad_frequency_movies, { min: 1, max: 10 }),
+    ad_break_interval_seconds: parseIntegerSetting(row.ad_break_interval_seconds, SCREEN_PLAYER_SETTING_DEFAULTS.ad_break_interval_seconds, { min: 15, max: 3600 }),
+    ads_per_break: parseIntegerSetting(row.ads_per_break, SCREEN_PLAYER_SETTING_DEFAULTS.ads_per_break, { min: 1, max: 10 }),
+    max_video_ad_seconds: parseIntegerSetting(row.max_video_ad_seconds, SCREEN_PLAYER_SETTING_DEFAULTS.max_video_ad_seconds, { min: 1, max: 120 }),
+    default_image_ad_seconds: parseIntegerSetting(row.default_image_ad_seconds, SCREEN_PLAYER_SETTING_DEFAULTS.default_image_ad_seconds, { min: 1, max: 120 }),
+    house_ad_fallback_enabled: parseBooleanSetting(row.house_ad_fallback_enabled),
+    poster_width_percent: parseIntegerSetting(row.poster_width_percent, SCREEN_PLAYER_SETTING_DEFAULTS.poster_width_percent, { min: 20, max: 70 }),
+    row_height_percent: parseIntegerSetting(row.row_height_percent, SCREEN_PLAYER_SETTING_DEFAULTS.row_height_percent, { min: 70, max: 130 }),
     updated_at: row.updated_at || '',
   };
 }
@@ -111,14 +124,32 @@ function sanitizeScreenPlayerSettings(settings = {}) {
   const nowShowing = Number.parseInt(settings.now_showing_duration_seconds, 10);
   const comingSoon = Number.parseInt(settings.coming_soon_duration_seconds, 10);
   const adFrequency = Number.parseInt(settings.ad_frequency_movies, 10);
+  const adBreakInterval = Number.parseInt(settings.ad_break_interval_seconds, 10);
+  const adsPerBreak = Number.parseInt(settings.ads_per_break, 10);
+  const maxVideoAdSeconds = Number.parseInt(settings.max_video_ad_seconds, 10);
+  const defaultImageAdSeconds = Number.parseInt(settings.default_image_ad_seconds, 10);
   const posterWidth = Number.parseInt(settings.poster_width_percent, 10);
   const rowHeight = Number.parseInt(settings.row_height_percent, 10);
+  const adsEnabledValue = settings.ads_enabled !== undefined ? settings.ads_enabled : settings.enable_ads;
 
   return {
     now_showing_duration_seconds: Number.isFinite(nowShowing) && nowShowing > 0 ? nowShowing : SCREEN_PLAYER_SETTING_DEFAULTS.now_showing_duration_seconds,
     coming_soon_duration_seconds: Number.isFinite(comingSoon) && comingSoon > 0 ? comingSoon : SCREEN_PLAYER_SETTING_DEFAULTS.coming_soon_duration_seconds,
-    enable_ads: settings.enable_ads === false || settings.enable_ads === 'false' ? 0 : 1,
+    enable_ads: adsEnabledValue === false || adsEnabledValue === 'false' || adsEnabledValue === 0 || adsEnabledValue === '0' ? 0 : 1,
     ad_frequency_movies: Number.isFinite(adFrequency) && adFrequency > 0 ? adFrequency : SCREEN_PLAYER_SETTING_DEFAULTS.ad_frequency_movies,
+    ad_break_interval_seconds: Number.isFinite(adBreakInterval) && adBreakInterval >= 15 && adBreakInterval <= 3600
+      ? adBreakInterval
+      : SCREEN_PLAYER_SETTING_DEFAULTS.ad_break_interval_seconds,
+    ads_per_break: Number.isFinite(adsPerBreak) && adsPerBreak > 0 && adsPerBreak <= 10
+      ? adsPerBreak
+      : SCREEN_PLAYER_SETTING_DEFAULTS.ads_per_break,
+    max_video_ad_seconds: Number.isFinite(maxVideoAdSeconds) && maxVideoAdSeconds > 0 && maxVideoAdSeconds <= 120
+      ? maxVideoAdSeconds
+      : SCREEN_PLAYER_SETTING_DEFAULTS.max_video_ad_seconds,
+    default_image_ad_seconds: Number.isFinite(defaultImageAdSeconds) && defaultImageAdSeconds > 0 && defaultImageAdSeconds <= 120
+      ? defaultImageAdSeconds
+      : SCREEN_PLAYER_SETTING_DEFAULTS.default_image_ad_seconds,
+    house_ad_fallback_enabled: settings.house_ad_fallback_enabled === false || settings.house_ad_fallback_enabled === 'false' ? 0 : 1,
     poster_width_percent: Number.isFinite(posterWidth) && posterWidth >= 20 && posterWidth <= 70
       ? posterWidth
       : SCREEN_PLAYER_SETTING_DEFAULTS.poster_width_percent,
@@ -225,9 +256,113 @@ async function setGlobalRefreshToken(refreshToken) {
   return upsertPlayerSettingValue('global_refresh_token', refreshToken);
 }
 
+function buildScreenRefreshTokenSettingKey(payload = {}) {
+  const screenName = String(payload.screen_name ?? '').trim();
+  if (screenName) {
+    return `screen_refresh_token:name:${encodeURIComponent(screenName)}`;
+  }
+
+  const normalizedScreen = normalizeScreenName(payload.screen);
+  const pagePath = String(payload.page_path ?? '').trim();
+  if (!normalizedScreen) {
+    return '';
+  }
+
+  return `screen_refresh_token:instance:${encodeURIComponent(normalizedScreen)}:${encodeURIComponent(pagePath)}`;
+}
+
+async function getScreenRefreshToken(payload = {}) {
+  const settingKey = buildScreenRefreshTokenSettingKey(payload);
+  if (!settingKey) {
+    return '';
+  }
+
+  return getPlayerSettingValue(settingKey);
+}
+
+async function setScreenRefreshToken(payload = {}) {
+  const settingKey = buildScreenRefreshTokenSettingKey(payload);
+  if (!settingKey) {
+    throw new Error('Missing screen refresh target.');
+  }
+
+  return upsertPlayerSettingValue(settingKey, new Date().toISOString());
+}
+
+function buildGroupRefreshTokenSettingKey(screen) {
+  const normalizedScreen = normalizeScreenName(screen);
+  if (!normalizedScreen) {
+    return '';
+  }
+
+  return `group_refresh_token:${encodeURIComponent(normalizedScreen)}`;
+}
+
+async function getGroupRefreshToken(screen) {
+  const settingKey = buildGroupRefreshTokenSettingKey(screen);
+  if (!settingKey) {
+    return '';
+  }
+
+  return getPlayerSettingValue(settingKey);
+}
+
+async function setGroupRefreshToken(screen) {
+  const settingKey = buildGroupRefreshTokenSettingKey(screen);
+  if (!settingKey) {
+    throw new Error('Missing refresh group.');
+  }
+
+  return upsertPlayerSettingValue(settingKey, new Date().toISOString());
+}
+
+function buildSiteRefreshTokenSettingKey(payload = {}) {
+  const rawScreenName = String(payload.screen_name ?? '').trim();
+  const rawSiteName = String(payload.site_name ?? '').trim();
+  const fallbackScreen = normalizeScreenName(payload.screen);
+
+  const combinedName = rawScreenName || rawSiteName;
+  let siteName = '';
+
+  if (combinedName.includes('|')) {
+    const separatorIndex = combinedName.indexOf('|');
+    siteName = combinedName.slice(0, separatorIndex).trim();
+  } else {
+    siteName = combinedName;
+  }
+
+  if (!siteName) {
+    siteName = fallbackScreen;
+  }
+
+  if (!siteName) {
+    return '';
+  }
+
+  return `site_refresh_token:${encodeURIComponent(siteName)}`;
+}
+
+async function getSiteRefreshToken(payload = {}) {
+  const settingKey = buildSiteRefreshTokenSettingKey(payload);
+  if (!settingKey) {
+    return '';
+  }
+
+  return getPlayerSettingValue(settingKey);
+}
+
+async function setSiteRefreshToken(payload = {}) {
+  const settingKey = buildSiteRefreshTokenSettingKey(payload);
+  if (!settingKey) {
+    throw new Error('Missing refresh site.');
+  }
+
+  return upsertPlayerSettingValue(settingKey, new Date().toISOString());
+}
+
 async function listScreenPlayerSettings() {
   const rows = await all(
-    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, poster_width_percent, row_height_percent, updated_at
+    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, ad_break_interval_seconds, ads_per_break, max_video_ad_seconds, default_image_ad_seconds, house_ad_fallback_enabled, poster_width_percent, row_height_percent, updated_at
      FROM screen_player_settings
      WHERE screen IN ('cinema', 'cinema-portrait', 'cinema-3x2')
      ORDER BY CASE screen
@@ -248,7 +383,7 @@ async function getScreenPlayerSettings(screen) {
   }
 
   const row = await all(
-    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, poster_width_percent, row_height_percent, updated_at
+    `SELECT screen, now_showing_duration_seconds, coming_soon_duration_seconds, enable_ads, ad_frequency_movies, ad_break_interval_seconds, ads_per_break, max_video_ad_seconds, default_image_ad_seconds, house_ad_fallback_enabled, poster_width_percent, row_height_percent, updated_at
      FROM screen_player_settings
      WHERE screen = ?
      LIMIT 1`,
@@ -273,15 +408,25 @@ async function upsertScreenPlayerSettings(screen, settings) {
        coming_soon_duration_seconds,
        enable_ads,
        ad_frequency_movies,
+       ad_break_interval_seconds,
+       ads_per_break,
+       max_video_ad_seconds,
+       default_image_ad_seconds,
+       house_ad_fallback_enabled,
        poster_width_percent,
        row_height_percent,
        updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP)
      ON CONFLICT(screen) DO UPDATE SET
        now_showing_duration_seconds = excluded.now_showing_duration_seconds,
        coming_soon_duration_seconds = excluded.coming_soon_duration_seconds,
        enable_ads = excluded.enable_ads,
        ad_frequency_movies = excluded.ad_frequency_movies,
+       ad_break_interval_seconds = excluded.ad_break_interval_seconds,
+       ads_per_break = excluded.ads_per_break,
+       max_video_ad_seconds = excluded.max_video_ad_seconds,
+       default_image_ad_seconds = excluded.default_image_ad_seconds,
+       house_ad_fallback_enabled = excluded.house_ad_fallback_enabled,
        poster_width_percent = excluded.poster_width_percent,
        row_height_percent = excluded.row_height_percent,
        updated_at = CURRENT_TIMESTAMP`,
@@ -291,6 +436,11 @@ async function upsertScreenPlayerSettings(screen, settings) {
       payload.coming_soon_duration_seconds,
       payload.enable_ads,
       payload.ad_frequency_movies,
+      payload.ad_break_interval_seconds,
+      payload.ads_per_break,
+      payload.max_video_ad_seconds,
+      payload.default_image_ad_seconds,
+      payload.house_ad_fallback_enabled,
       payload.poster_width_percent,
       payload.row_height_percent,
     ]
@@ -309,6 +459,12 @@ module.exports = {
   upsertPlayerSettings,
   getGlobalRefreshToken,
   setGlobalRefreshToken,
+  getScreenRefreshToken,
+  setScreenRefreshToken,
+  getGroupRefreshToken,
+  setGroupRefreshToken,
+  getSiteRefreshToken,
+  setSiteRefreshToken,
   getScreenPlayerSettings,
   listScreenPlayerSettings,
   upsertScreenPlayerSettings,

@@ -1,0 +1,139 @@
+<%- include('partials/layout-start', { pageTitle: 'Reports' }) %>
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>Reports</h1>
+    <p class="muted">Review playback logs, monitor screen heartbeats, and export a CSV snapshot for quick analysis.</p>
+  </div>
+  <div class="page-header-actions">
+    <a class="secondary-link" href="/admin/reports/ads">Ad Performance</a>
+    <a class="secondary-link" href="/admin/reports/screens">Screen Status</a>
+    <a class="secondary-link" href="<%= exportUrl %>">Export CSV</a>
+  </div>
+</header>
+
+<main class="admin-grid report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <section class="panel panel-wide">
+    <div class="panel-heading">
+      <div>
+        <h2>Playback Overview</h2>
+        <p class="muted">Filter by date, screen, and item type to focus the report window.</p>
+      </div>
+    </div>
+
+    <form method="get" action="/admin/reports" class="report-filter-grid">
+      <label>
+        <span>Date From</span>
+        <input type="date" name="date_from" value="<%= filters.dateFrom || '' %>">
+      </label>
+      <label>
+        <span>Date To</span>
+        <input type="date" name="date_to" value="<%= filters.dateTo || '' %>">
+      </label>
+      <label>
+        <span>Screen</span>
+        <select name="screen">
+          <% filterOptions.screens.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= filters.screen === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }); %>
+        </select>
+      </label>
+      <label>
+        <span>Item Type</span>
+        <select name="item_type">
+          <% filterOptions.itemTypes.forEach((option) => { %>
+            <option value="<%= option.value %>" <%= filters.itemType === option.value ? 'selected' : '' %>><%= option.label %></option>
+          <% }); %>
+        </select>
+      </label>
+      <div class="form-actions">
+        <button type="submit" class="secondary">Apply Filters</button>
+      </div>
+    </form>
+  </section>
+
+  <section class="panel panel-wide">
+    <div class="report-summary-grid">
+      <article class="report-summary-card">
+        <span class="report-summary-label">Playback Events</span>
+        <strong class="report-summary-value"><%= summary.totalEvents %></strong>
+        <span class="report-summary-note">All logs in the selected range.</span>
+      </article>
+      <article class="report-summary-card">
+        <span class="report-summary-label">Movie Plays</span>
+        <strong class="report-summary-value"><%= summary.moviePlays %></strong>
+        <span class="report-summary-note">Movie playback entries.</span>
+      </article>
+      <article class="report-summary-card">
+        <span class="report-summary-label">Ad Plays</span>
+        <strong class="report-summary-value"><%= summary.adPlays %></strong>
+        <span class="report-summary-note">Ad playback entries.</span>
+      </article>
+      <article class="report-summary-card">
+        <span class="report-summary-label">Estimated Minutes</span>
+        <strong class="report-summary-value"><%= summary.estimatedMinutes %></strong>
+        <span class="report-summary-note">Derived from recorded durations.</span>
+      </article>
+    </div>
+  </section>
+
+  <section class="panel panel-wide">
+    <div class="report-export-bar">
+      <div>
+        <h2>Recent Playback Logs</h2>
+        <p class="muted">Most recent entries for <strong><%= screenLabel %></strong>.</p>
+      </div>
+      <a class="secondary-link" href="<%= exportUrl %>">Export CSV</a>
+    </div>
+
+    <% if (!recentLogs || recentLogs.length === 0) { %>
+      <p class="report-empty-state">No playback logs were found for the selected filters.</p>
+    <% } else { %>
+      <div class="report-table-wrapper" style="margin-top: 16px;">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th scope="col">Started</th>
+              <th scope="col">Screen</th>
+              <th scope="col">Item</th>
+              <th scope="col">Type</th>
+              <th scope="col">Duration</th>
+              <th scope="col">Status</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% recentLogs.forEach((row) => { %>
+              <tr>
+                <td><%= row.startedAtLabel %></td>
+                <td><%= row.screen %></td>
+                <td>
+                  <div class="report-meta-list">
+                    <strong><%= row.item_title %></strong>
+                    <% if (row.item_id) { %>
+                      <span class="report-meta-text">ID: <%= row.item_id %></span>
+                    <% } %>
+                  </div>
+                </td>
+                <td><span class="report-pill"><%= row.itemTypeLabel %></span></td>
+                <td><%= row.durationLabel %></td>
+                <td><span class="report-status-badge is-<%= row.statusLabel === 'failed' ? 'offline' : 'online' %>"><%= row.statusLabel %></span></td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('partials/layout-end') %>

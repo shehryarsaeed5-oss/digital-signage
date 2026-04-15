@@ -1,6 +1,23 @@
 const { all, get, run } = require('../config/database');
 
-async function listAds({ status, screen, createdAtOrder = 'DESC' } = {}) {
+function normalizeScheduleDateTime(value) {
+  const text = String(value ?? '').trim();
+  if (!text) {
+    return null;
+  }
+
+  const normalizedText = text.includes('T') || text.includes(' ')
+    ? text.replace(' ', 'T')
+    : text;
+  const parsed = Date.parse(normalizedText);
+  if (!Number.isFinite(parsed)) {
+    return null;
+  }
+
+  return new Date(parsed).toISOString();
+}
+
+async function listAds({ status, screen, createdAtOrder = 'DESC', eligibleNow = false } = {}) {
   const params = [];
   const whereClauses = [];
 
@@ -26,6 +43,11 @@ async function listAds({ status, screen, createdAtOrder = 'DESC' } = {}) {
     params.push(normalizedScreen);
   }
 
+  if (eligibleNow) {
+    whereClauses.push("(start_at IS NULL OR datetime(start_at) <= datetime('now'))");
+    whereClauses.push("(end_at IS NULL OR datetime(end_at) >= datetime('now'))");
+  }
+
   const whereSql = whereClauses.length > 0 ? `WHERE ${whereClauses.join(' AND ')}` : '';
   const normalizedCreatedAtOrder = String(createdAtOrder).toUpperCase() === 'ASC' ? 'ASC' : 'DESC';
   
@@ -45,6 +67,9 @@ async function getAdById(adId) {
 }
 
 async function createAd(ad) {
+  const durationSeconds = ad.duration_seconds ?? null;
+  const startAt = normalizeScheduleDateTime(ad.start_at);
+  const endAt = normalizeScheduleDateTime(ad.end_at);
   const result = await run(
     `INSERT INTO ads (
        title,
@@ -54,17 +79,21 @@ async function createAd(ad) {
        status,
        sort_order,
        screen_targets,
+       start_at,
+       end_at,
        created_at,
        updated_at
-     ) VALUES (?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
+     ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)`,
     [
       ad.title,
       ad.file_path,
       ad.type,
-      ad.duration_seconds ?? null,
+      durationSeconds,
       ad.status || 'inactive',
       ad.sort_order ?? 0,
       ad.screen_targets ?? null,
+      startAt,
+      endAt,
     ]
   );
 
@@ -77,6 +106,27 @@ async function getAdByFilePath(filePath) {
 
 async function deleteAd(adId) {
   await run('DELETE FROM ads WHERE id = ?', [adId]);
+}
+
+async function deleteAds(adIds) {
+  const uniqueIds = Array.from(
+    new Set(
+      (Array.isArray(adIds) ? adIds : [])
+        .map((value) => Number.parseInt(value, 10))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    )
+  );
+
+  if (uniqueIds.length === 0) {
+    return { changes: 0 };
+  }
+
+  const placeholders = uniqueIds.map(() => '?').join(', ');
+  const result = await run(`DELETE FROM ads WHERE id IN (${placeholders})`, uniqueIds);
+
+  return {
+    changes: result.changes || 0,
+  };
 }
 
 async function toggleAdStatus(adId, desiredStatus) {
@@ -95,6 +145,66 @@ async function toggleAdStatus(adId, desiredStatus) {
   );
 
   return getAdById(adId);
+}
+
+async function updateAdStatuses(adIds, desiredStatus) {
+  const normalizedStatus = String(desiredStatus || '').toLowerCase().trim();
+  if (normalizedStatus !== 'active' && normalizedStatus !== 'inactive') {
+    throw new Error('Invalid ad status.');
+  }
+
+  const uniqueIds = Array.from(
+    new Set(
+      (Array.isArray(adIds) ? adIds : [])
+        .map((value) => Number.parseInt(value, 10))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    )
+  );
+
+  if (uniqueIds.length === 0) {
+    return { changes: 0 };
+  }
+
+  const placeholders = uniqueIds.map(() => '?').join(', ');
+  const result = await run(
+    `UPDATE ads
+     SET status = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id IN (${placeholders})`,
+    [normalizedStatus, ...uniqueIds]
+  );
+
+  return {
+    changes: result.changes || 0,
+  };
+}
+
+async function updateAdScreenTargets(adIds, screenTargets) {
+  const uniqueIds = Array.from(
+    new Set(
+      (Array.isArray(adIds) ? adIds : [])
+        .map((value) => Number.parseInt(value, 10))
+        .filter((value) => Number.isFinite(value) && value > 0)
+    )
+  );
+
+  if (uniqueIds.length === 0) {
+    return { changes: 0 };
+  }
+
+  const normalizedTargets = String(screenTargets || '').trim() || null;
+  const placeholders = uniqueIds.map(() => '?').join(', ');
+  const result = await run(
+    `UPDATE ads
+     SET screen_targets = ?,
+         updated_at = CURRENT_TIMESTAMP
+     WHERE id IN (${placeholders})`,
+    [normalizedTargets, ...uniqueIds]
+  );
+
+  return {
+    changes: result.changes || 0,
+  };
 }
 
 async function updateSortOrder(adId, sortOrder) {
@@ -158,9 +268,17 @@ async function updateAd(adId, changes) {
     'status',
     'sort_order',
     'screen_targets',
+    'start_at',
+    'end_at',
   ];
 
-  const entries = Object.entries(changes).filter(([key]) => allowedFields.includes(key));
+  const normalizedChanges = {
+    ...changes,
+    start_at: normalizeScheduleDateTime(changes.start_at),
+    end_at: normalizeScheduleDateTime(changes.end_at),
+  };
+
+  const entries = Object.entries(normalizedChanges).filter(([key]) => allowedFields.includes(key));
   if (entries.length === 0) {
     return ad;
   }
@@ -186,7 +304,11 @@ module.exports = {
   createAd,
   updateAd,
   deleteAd,
+  deleteAds,
   toggleAdStatus,
+  updateAdStatuses,
+  updateAdScreenTargets,
   updateSortOrder,
   updateAdCompressionState,
+  normalizeScheduleDateTime,
 };

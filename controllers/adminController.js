@@ -17,6 +17,9 @@ const {
   upsertPlayerSettings,
   upsertScreenPlayerSettings,
   setGlobalRefreshToken,
+  setGroupRefreshToken,
+  setScreenRefreshToken,
+  setSiteRefreshToken,
   normalizeScreenName,
 } = require('../repositories/playerSettingsRepository');
 const {
@@ -26,11 +29,15 @@ const {
   getAdByFilePath,
   listAds,
   toggleAdStatus,
+  deleteAds,
+  updateAdStatuses,
+  updateAdScreenTargets,
   updateSortOrder,
   updateAdCompressionState,
 } = require('../repositories/adRepository');
 const {
   getMovieById,
+  listMovieScheduleRowsByDate,
   setMoviePlaylistVisibility,
 } = require('../repositories/movieSyncRepository');
 const {
@@ -39,7 +46,11 @@ const {
 const {
   compressVideoForSignage,
   ensureFfmpegAvailable,
+  getVideoDurationSeconds,
 } = require('../services/adCompressionService');
+const {
+  getScreenActivityReport,
+} = require('../repositories/reportRepository');
 
 const ADMIN_USERNAME = process.env.ADMIN_USERNAME || 'admin';
 const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || 'password';
@@ -125,6 +136,253 @@ function buildDashboardData(message = '', error = '') {
     message,
     error,
   }));
+}
+
+function toLocalIsoDate(value = new Date()) {
+  const date = value instanceof Date ? value : new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+function formatCueDateLabel(isoDate) {
+  const text = String(isoDate || '').trim();
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) {
+    return '';
+  }
+
+  const parsed = new Date(`${text}T00:00:00`);
+  if (Number.isNaN(parsed.getTime())) {
+    return '';
+  }
+
+  return new Intl.DateTimeFormat('en-GB', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  }).format(parsed);
+}
+
+function parseTimeToMinutes(timeLabel) {
+  const text = String(timeLabel || '').trim();
+  const match = text.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+  if (!match) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3].toUpperCase();
+
+  if (meridiem === 'PM' && hours !== 12) {
+    hours += 12;
+  }
+
+  if (meridiem === 'AM' && hours === 12) {
+    hours = 0;
+  }
+
+  return (hours * 60) + minutes;
+}
+
+function buildScreenList(entries = []) {
+  const screenMap = new Map();
+
+  for (const entry of Array.isArray(entries) ? entries : []) {
+    const screen = String(entry?.screen || '').trim();
+    if (!screen) {
+      continue;
+    }
+
+    if (!screenMap.has(screen)) {
+      screenMap.set(screen, []);
+    }
+
+    screenMap.get(screen).push(entry.time);
+  }
+
+  return [...screenMap.entries()].map(([screen, times]) => ({
+    screen,
+    times: [...new Set(times)].sort((left, right) => parseTimeToMinutes(left) - parseTimeToMinutes(right)),
+  }));
+}
+
+function parseTimeToMinutes(timeLabel) {
+  const text = String(timeLabel || '').trim();
+  const match = text.match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+
+  if (!match) {
+    return Number.MAX_SAFE_INTEGER;
+  }
+
+  let hours = Number(match[1]);
+  const minutes = Number(match[2]);
+  const meridiem = match[3].toUpperCase();
+
+  if (meridiem === 'PM' && hours !== 12) {
+    hours += 12;
+  }
+
+  if (meridiem === 'AM' && hours === 12) {
+    hours = 0;
+  }
+
+  return (hours * 60) + minutes;
+}
+
+async function buildMovieScheduleApiPageData() {
+  const date = toLocalIsoDate(new Date());
+  const dateLabel = formatCueDateLabel(date);
+  const rows = dateLabel
+    ? await listMovieScheduleRowsByDate('CUE Cinemas', dateLabel)
+    : [];
+
+  const moviesById = new Map();
+  const rowsPreview = [];
+
+  for (const row of rows) {
+    const posterPath = row.local_poster_path || row.poster_url || '';
+
+    if (!moviesById.has(row.movie_id)) {
+      moviesById.set(row.movie_id, {
+        movie: row.title,
+        poster: posterPath,
+        runtime: row.runtime || '',
+        rating: null,
+        showtimes: [],
+      });
+    }
+
+    const movie = moviesById.get(row.movie_id);
+    if (!movie.poster && posterPath) {
+      movie.poster = posterPath;
+    }
+
+    if (row.show_time) {
+      movie.showtimes.push({
+        date: row.show_date,
+        time: row.show_time,
+        screen: row.screen || null,
+      });
+
+      rowsPreview.push({
+        movie: row.title,
+        poster: posterPath,
+        runtime: row.runtime || '',
+        rating: null,
+        screen: row.screen || null,
+        time: row.show_time,
+        date: row.show_date,
+      });
+    }
+  }
+
+  const movies = [...moviesById.values()].map((movie) => {
+    const screenMap = new Map();
+
+    for (const showtime of movie.showtimes) {
+      const screen = String(showtime.screen || '').trim();
+      const screenKey = screen || '';
+      if (!screenMap.has(screenKey)) {
+        screenMap.set(screenKey, []);
+      }
+
+      screenMap.get(screenKey).push(showtime.time);
+    }
+
+    const screenTimes = [...screenMap.entries()]
+      .filter(([screen]) => Boolean(screen))
+      .map(([screen, times]) => ({
+        screen,
+        times: [...new Set(times)].sort((left, right) => parseTimeToMinutes(left) - parseTimeToMinutes(right)),
+      }));
+
+    const screens = [...new Set(screenTimes.map((entry) => entry.screen))];
+    const times = [...new Set(movie.showtimes.map((entry) => entry.time))].sort((left, right) => parseTimeToMinutes(left) - parseTimeToMinutes(right));
+
+    return {
+      ...movie,
+      screens,
+      screenTimes,
+      times,
+      showtimes: movie.showtimes.sort((left, right) => parseTimeToMinutes(left.time) - parseTimeToMinutes(right.time)),
+    };
+  });
+
+  const preview = {
+    date,
+    dateLabel,
+    source: 'local-sqlite',
+    screenAvailable: rows.some((row) => String(row.screen || '').trim().length > 0),
+    movies,
+    rows: rowsPreview.sort((left, right) => {
+      const titleCompare = String(left.movie || '').localeCompare(String(right.movie || ''), 'en', {
+        sensitivity: 'base',
+      });
+
+      if (titleCompare !== 0) {
+        return titleCompare;
+      }
+
+      return parseTimeToMinutes(left.time) - parseTimeToMinutes(right.time);
+    }),
+  };
+
+  return {
+    endpointPath: '/api/share/movie-schedule',
+    date,
+    dateLabel,
+    endpointExample: `/api/share/movie-schedule?date=${date}`,
+    endpointExampleWithToken: process.env.MOVIE_SHARE_TOKEN
+      ? `/api/share/movie-schedule?date=${date}&token=YOUR_TOKEN`
+      : '',
+    tokenEnabled: Boolean(String(process.env.MOVIE_SHARE_TOKEN || '').trim()),
+    preview,
+    previewJson: JSON.stringify(preview, null, 2),
+  };
+}
+
+function formatTimestamp(value) {
+  if (!value) {
+    return '—';
+  }
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return value;
+  }
+
+  return date.toLocaleString('en-US', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+}
+
+function mapScreenStatusRow(row) {
+  const mode = String(row.player_mode || '').toLowerCase();
+  const screenNameText = String(row.screen_name || '').trim();
+  const pipeIndex = screenNameText.indexOf('|');
+  const sitePart = pipeIndex >= 0 ? screenNameText.slice(0, pipeIndex).trim() : screenNameText;
+  const screenLabelPart = pipeIndex >= 0 ? screenNameText.slice(pipeIndex + 1).trim() : '';
+  const siteLabel = sitePart || row.screen || '-';
+  const screenLabel = screenLabelPart || screenNameText || row.screen || '-';
+  return {
+    ...row,
+    siteLabel,
+    screenNameLabel: screenLabel,
+    pageLabel: row.player_path || '—',
+    nowPlayingLabel: row.current_item_title || '-',
+    lastSeenLabel: formatTimestamp(row.last_seen_at),
+    statusLabel: row.connection_status === 'online' ? 'Online' : 'Offline',
+    modeLabel: mode === 'live' ? 'Live' : mode === 'cached' ? 'Cached' : 'Waiting',
+  };
 }
 
 async function buildLivePlaylistPageData() {
@@ -226,7 +484,7 @@ async function buildMovieSyncPageData() {
       ['CUE Cinemas']
     ),
     all(
-      `SELECT movie_id, show_date, show_time
+      `SELECT movie_id, show_date, show_time, screen
        FROM movie_showtimes
        ORDER BY show_date ASC, show_time ASC`
     ),
@@ -244,15 +502,24 @@ async function buildMovieSyncPageData() {
       datesMap.set(showtime.show_date, []);
     }
 
-    datesMap.get(showtime.show_date).push(showtime.show_time);
+    datesMap.get(showtime.show_date).push({
+      time: showtime.show_time,
+      screen: showtime.screen || null,
+    });
   }
 
   return movies.map((movie) => ({
     ...movie,
-    showtimesByDate: [...(showtimesByMovieId.get(movie.id)?.entries() || [])].map(([date, times]) => ({
-      date,
-      times,
-    })),
+    showtimesByDate: [...(showtimesByMovieId.get(movie.id)?.entries() || [])].map(([date, entries]) => {
+      const screenTimes = buildScreenList(entries);
+
+      return {
+        date,
+        times: [...new Set(entries.map((entry) => entry.time))],
+        screenTimes,
+        screens: screenTimes.map((entry) => entry.screen),
+      };
+    }),
   }));
 }
 
@@ -275,10 +542,31 @@ function consumeAdFormData(req) {
     sort_order: 0,
     status: 'inactive',
     screen_targets: [],
+    start_at: '',
+    end_at: '',
   };
 
   req.session.flashAdForm = null;
   return form;
+}
+
+function formatDateTimeLocalInputValue(value) {
+  const text = String(value || '').trim();
+  if (!text) {
+    return '';
+  }
+
+  const date = new Date(text);
+  if (Number.isNaN(date.getTime())) {
+    return '';
+  }
+
+  const pad = (numericValue) => String(numericValue).padStart(2, '0');
+  return [
+    date.getFullYear(),
+    pad(date.getMonth() + 1),
+    pad(date.getDate()),
+  ].join('-') + `T${pad(date.getHours())}:${pad(date.getMinutes())}`;
 }
 
 function buildAdsAssetAbsolutePath(filePath) {
@@ -295,6 +583,14 @@ function buildAdsOptimizedAbsolutePath(filePath) {
   }
 
   return path.join(__dirname, '..', 'public', filePath.replace(/^\//, ''));
+}
+
+async function resolveAdVideoDurationSeconds(absolutePath) {
+  if (!absolutePath || !fs.existsSync(absolutePath)) {
+    return null;
+  }
+
+  return getVideoDurationSeconds(absolutePath);
 }
 
 function formatBytes(bytes) {
@@ -473,6 +769,21 @@ exports.movieSyncPage = async (req, res, next) => {
   }
 };
 
+exports.movieScheduleApiPage = async (req, res, next) => {
+  try {
+    const data = await buildMovieScheduleApiPageData();
+    const flash = consumeFlash(req);
+
+    res.render('admin/movie-schedule-api', {
+      ...data,
+      success: flash.success,
+      error: flash.error,
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.playlistPage = async (req, res, next) => {
   try {
     const data = await buildLivePlaylistPageData();
@@ -557,6 +868,21 @@ exports.playerSettingsPage = async (req, res, next) => {
   }
 };
 
+exports.screensPage = async (req, res, next) => {
+  try {
+    const rows = await getScreenActivityReport();
+    const flash = consumeFlash(req);
+
+    res.render('admin/screens', {
+      success: flash.success,
+      error: flash.error,
+      rows: rows.map(mapScreenStatusRow),
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.refreshAllScreens = async (req, res, next) => {
   try {
     await setGlobalRefreshToken(new Date().toISOString());
@@ -564,6 +890,35 @@ exports.refreshAllScreens = async (req, res, next) => {
     req.session.flashMessage = 'Refresh signal sent to all screens.';
     req.session.flashError = '';
     res.redirect('/admin/player-settings');
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.refreshScreen = async (req, res, next) => {
+  try {
+    if (String(req.body.group || '').trim()) {
+      const group = normalizeScreenName(req.body.group);
+      await setGroupRefreshToken(group);
+      req.session.flashMessage = `Refresh signal sent to ${group}.`;
+    } else if (String(req.body.scope || '').trim() === 'site') {
+      await setSiteRefreshToken({
+        screen_name: req.body.screen_name,
+        site_name: req.body.site_name,
+        screen: req.body.screen,
+      });
+      req.session.flashMessage = 'Refresh signal sent to the selected site.';
+    } else {
+      await setScreenRefreshToken({
+        screen_name: req.body.screen_name,
+        screen: req.body.screen,
+        page_path: req.body.page_path,
+      });
+
+      req.session.flashMessage = 'Refresh signal sent to the selected screen.';
+    }
+    req.session.flashError = '';
+    res.redirect('/admin/screens');
   } catch (error) {
     next(error);
   }
@@ -602,6 +957,10 @@ exports.savePlayerSettings = async (req, res, next) => {
     const nowShowingDuration = Number.parseInt(req.body.now_showing_duration_seconds, 10);
     const comingSoonDuration = Number.parseInt(req.body.coming_soon_duration_seconds, 10);
     const adFrequencyMovies = Number.parseInt(req.body.ad_frequency_movies, 10);
+    const adBreakIntervalSeconds = Number.parseInt(req.body.ad_break_interval_seconds, 10);
+    const adsPerBreak = Number.parseInt(req.body.ads_per_break, 10);
+    const maxVideoAdSeconds = Number.parseInt(req.body.max_video_ad_seconds, 10);
+    const defaultImageAdSeconds = Number.parseInt(req.body.default_image_ad_seconds, 10);
     const hasPosterWidthField = Object.prototype.hasOwnProperty.call(req.body, 'poster_width_percent');
     const posterWidthPercent = hasPosterWidthField
       ? Number.parseInt(req.body.poster_width_percent, 10)
@@ -611,8 +970,15 @@ exports.savePlayerSettings = async (req, res, next) => {
       ? Number.parseInt(req.body.row_height_percent, 10)
       : SCREEN_PLAYER_SETTING_DEFAULTS.row_height_percent;
     const isEnabled = req.body.enable_ads === 'on' || req.body.enable_ads === 'true' || req.body.enable_ads === '1';
+    const houseAdFallbackEnabled = req.body.house_ad_fallback_enabled === 'on'
+      || req.body.house_ad_fallback_enabled === 'true'
+      || req.body.house_ad_fallback_enabled === '1';
     const isValidDuration = (value) => Number.isFinite(value) && value >= 1 && value <= 60;
     const isValidAdFrequency = Number.isFinite(adFrequencyMovies) && adFrequencyMovies >= 1 && adFrequencyMovies <= 10;
+    const isValidAdBreakInterval = Number.isFinite(adBreakIntervalSeconds) && adBreakIntervalSeconds >= 15 && adBreakIntervalSeconds <= 3600;
+    const isValidAdsPerBreak = Number.isFinite(adsPerBreak) && adsPerBreak >= 1 && adsPerBreak <= 10;
+    const isValidVideoAdSeconds = Number.isFinite(maxVideoAdSeconds) && maxVideoAdSeconds >= 1 && maxVideoAdSeconds <= 120;
+    const isValidImageAdSeconds = Number.isFinite(defaultImageAdSeconds) && defaultImageAdSeconds >= 1 && defaultImageAdSeconds <= 120;
     const isValidPosterWidth = Number.isFinite(posterWidthPercent) && posterWidthPercent >= 20 && posterWidthPercent <= 70;
     const isValidRowHeight = Number.isFinite(rowHeightPercent) && rowHeightPercent >= 70 && rowHeightPercent <= 130;
 
@@ -630,6 +996,54 @@ exports.savePlayerSettings = async (req, res, next) => {
 
     if (!isValidAdFrequency) {
       const errorMessage = 'Ad frequency must be a whole number between 1 and 10.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
+      res.redirect('/admin/player-settings');
+      return;
+    }
+
+    if (!isValidAdBreakInterval) {
+      const errorMessage = 'Ad break interval must be a whole number between 15 and 3600.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
+      res.redirect('/admin/player-settings');
+      return;
+    }
+
+    if (!isValidAdsPerBreak) {
+      const errorMessage = 'Ads per break must be a whole number between 1 and 10.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
+      res.redirect('/admin/player-settings');
+      return;
+    }
+
+    if (!isValidVideoAdSeconds) {
+      const errorMessage = 'Max video ad seconds must be a whole number between 1 and 120.';
+      if (wantsJson) {
+        res.status(400).json({ error: errorMessage });
+        return;
+      }
+      req.session.flashError = errorMessage;
+      req.session.flashMessage = '';
+      res.redirect('/admin/player-settings');
+      return;
+    }
+
+    if (!isValidImageAdSeconds) {
+      const errorMessage = 'Default image ad seconds must be a whole number between 1 and 120.';
       if (wantsJson) {
         res.status(400).json({ error: errorMessage });
         return;
@@ -669,6 +1083,11 @@ exports.savePlayerSettings = async (req, res, next) => {
       coming_soon_duration_seconds: comingSoonDuration,
       enable_ads: isEnabled,
       ad_frequency_movies: adFrequencyMovies,
+      ad_break_interval_seconds: adBreakIntervalSeconds,
+      ads_per_break: adsPerBreak,
+      max_video_ad_seconds: maxVideoAdSeconds,
+      default_image_ad_seconds: defaultImageAdSeconds,
+      house_ad_fallback_enabled: houseAdFallbackEnabled,
       poster_width_percent: posterWidthPercent,
       row_height_percent: rowHeightPercent,
     });
@@ -751,6 +1170,8 @@ exports.uploadAd = async (req, res, next) => {
         duration_seconds: req.body.duration_seconds || 10,
         sort_order: req.body.sort_order || 0,
         status: req.body.status === 'active' ? 'active' : 'inactive',
+        start_at: req.body.start_at || '',
+        end_at: req.body.end_at || '',
       };
       res.redirect('/admin/ads/new');
       return;
@@ -764,6 +1185,8 @@ exports.uploadAd = async (req, res, next) => {
         duration_seconds: req.body.duration_seconds || 10,
         sort_order: req.body.sort_order || 0,
         status: req.body.status === 'active' ? 'active' : 'inactive',
+        start_at: req.body.start_at || '',
+        end_at: req.body.end_at || '',
       };
       res.redirect('/admin/ads/new');
       return;
@@ -782,6 +1205,8 @@ exports.uploadAd = async (req, res, next) => {
         duration_seconds: rawDuration || 10,
         sort_order: req.body.sort_order || 0,
         status: req.body.status === 'active' ? 'active' : 'inactive',
+        start_at: req.body.start_at || '',
+        end_at: req.body.end_at || '',
       };
       res.redirect('/admin/ads/new');
       return;
@@ -792,20 +1217,29 @@ exports.uploadAd = async (req, res, next) => {
     const status = req.body.status === 'active' ? 'active' : 'inactive';
     const title = req.body.title?.trim() || path.parse(req.file.originalname).name;
     const filePath = `${ADS_UPLOADS_PUBLIC_PATH}/${req.file.filename}`;
+    const absoluteFilePath = buildAdsAssetAbsolutePath(filePath);
+    const startAt = req.body.start_at || null;
+    const endAt = req.body.end_at || null;
 
     const rawScreenTargets = req.body.screen_targets;
     const screenTargets = Array.isArray(rawScreenTargets) 
       ? rawScreenTargets.join(',') 
       : (rawScreenTargets || null);
 
+    const videoDurationSeconds = type === 'video'
+      ? await resolveAdVideoDurationSeconds(absoluteFilePath)
+      : null;
+
     await createAd({
       title,
       file_path: filePath,
       type,
-      duration_seconds: durationSeconds,
+      duration_seconds: type === 'video' ? videoDurationSeconds : durationSeconds,
       status,
       sort_order: sortOrder,
       screen_targets: screenTargets,
+      start_at: startAt,
+      end_at: endAt,
     });
 
     req.session.flashMessage = 'Ad uploaded successfully.';
@@ -852,11 +1286,15 @@ exports.importAdFromFolder = async (req, res, next) => {
       return;
     }
 
+    const videoDurationSeconds = type === 'video'
+      ? await resolveAdVideoDurationSeconds(absolutePath)
+      : null;
+
     await createAd({
       title: path.basename(filePath),
       file_path: filePath,
       type,
-      duration_seconds: type === 'video' ? null : 10,
+      duration_seconds: type === 'video' ? videoDurationSeconds : 10,
       status: 'inactive',
       sort_order: 0,
       screen_targets: null,
@@ -918,7 +1356,11 @@ exports.editAdPage = async (req, res, next) => {
     }
 
     res.render('admin/ads-edit', {
-      ad,
+      ad: {
+        ...ad,
+        start_at_formatted: formatDateTimeLocalInputValue(ad.start_at),
+        end_at_formatted: formatDateTimeLocalInputValue(ad.end_at),
+      },
       error: '',
     });
   } catch (error) {
@@ -953,6 +1395,149 @@ exports.deleteAd = async (req, res, next) => {
   }
 };
 
+exports.bulkDeleteAds = async (req, res, next) => {
+  try {
+    const adIds = Array.isArray(req.body.ad_ids)
+      ? req.body.ad_ids
+      : (req.body.ad_ids ? [req.body.ad_ids] : []);
+
+    const uniqueIds = Array.from(
+      new Set(
+        adIds
+          .map((value) => Number.parseInt(value, 10))
+          .filter((value) => Number.isFinite(value) && value > 0)
+      )
+    );
+
+    if (uniqueIds.length === 0) {
+      req.session.flashError = 'Select at least one ad to delete.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    const ads = await Promise.all(uniqueIds.map((adId) => getAdById(adId)));
+    ads.forEach((ad) => {
+      if (!ad) {
+        return;
+      }
+
+      const absoluteAssetPath = buildAdsAssetAbsolutePath(ad.file_path);
+      if (absoluteAssetPath && fs.existsSync(absoluteAssetPath)) {
+        fs.unlinkSync(absoluteAssetPath);
+      }
+    });
+
+    const result = await deleteAds(uniqueIds);
+    if (!result.changes) {
+      req.session.flashError = 'Select at least one ad to delete.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    req.session.flashMessage = `${result.changes} ad${result.changes === 1 ? '' : 's'} deleted.`;
+    req.session.flashError = '';
+    res.redirect('/admin/ads');
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.bulkDuplicateAds = async (req, res, next) => {
+  try {
+    const adIds = Array.isArray(req.body.ad_ids)
+      ? req.body.ad_ids
+      : (req.body.ad_ids ? [req.body.ad_ids] : []);
+    const uniqueIds = Array.from(
+      new Set(
+        adIds
+          .map((value) => Number.parseInt(value, 10))
+          .filter((value) => Number.isFinite(value) && value > 0)
+      )
+    );
+
+    if (uniqueIds.length === 0) {
+      req.session.flashError = 'Select at least one ad to duplicate.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    const ads = await Promise.all(uniqueIds.map((adId) => getAdById(adId)));
+    const sourceAds = ads.filter(Boolean);
+
+    if (sourceAds.length === 0) {
+      req.session.flashError = 'Select at least one ad to duplicate.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    const createdAds = [];
+    for (const ad of sourceAds) {
+      const copy = await createAd({
+        title: `${ad.title || 'Untitled Ad'} (Copy)`,
+        file_path: ad.file_path,
+        type: ad.type,
+        duration_seconds: ad.duration_seconds,
+        status: 'inactive',
+        sort_order: ad.sort_order,
+        screen_targets: ad.screen_targets,
+        start_at: ad.start_at,
+        end_at: ad.end_at,
+      });
+
+      if (copy) {
+        createdAds.push(copy);
+      }
+    }
+
+    if (createdAds.length === 0) {
+      req.session.flashError = 'No ads were duplicated.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    req.session.flashMessage = `${createdAds.length} ad${createdAds.length === 1 ? '' : 's'} duplicated.`;
+    req.session.flashError = '';
+    res.redirect('/admin/ads');
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.bulkUpdateAdsTargets = async (req, res, next) => {
+  try {
+    const adIds = Array.isArray(req.body.ad_ids)
+      ? req.body.ad_ids
+      : (req.body.ad_ids ? [req.body.ad_ids] : []);
+
+    const selectedTargets = Array.isArray(req.body.screen_targets)
+      ? req.body.screen_targets
+      : (req.body.screen_targets ? [req.body.screen_targets] : []);
+    const normalizedTargets = selectedTargets
+      .map((value) => String(value || '').trim())
+      .filter(Boolean)
+      .join(',');
+
+    const result = await updateAdScreenTargets(adIds, normalizedTargets);
+    if (!result.changes) {
+      req.session.flashError = 'Select at least one ad to update.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    req.session.flashMessage = `${result.changes} ad${result.changes === 1 ? '' : 's'} updated.`;
+    req.session.flashError = '';
+    res.redirect('/admin/ads');
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.toggleAd = async (req, res, next) => {
   try {
     const adId = Number.parseInt(req.params.id, 10);
@@ -966,6 +1551,36 @@ exports.toggleAd = async (req, res, next) => {
     }
 
     req.session.flashMessage = `Ad ${ad.status === 'active' ? 'activated' : 'deactivated'}.`;
+    req.session.flashError = '';
+    res.redirect('/admin/ads');
+  } catch (error) {
+    next(error);
+  }
+};
+
+exports.bulkUpdateAdsStatus = async (req, res, next) => {
+  try {
+    const desiredStatus = String(req.body.bulk_status || '').toLowerCase().trim();
+    if (desiredStatus !== 'active' && desiredStatus !== 'inactive') {
+      req.session.flashError = 'Please choose activate or deactivate.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    const adIds = Array.isArray(req.body.ad_ids)
+      ? req.body.ad_ids
+      : (req.body.ad_ids ? [req.body.ad_ids] : []);
+
+    const result = await updateAdStatuses(adIds, desiredStatus);
+    if (!result.changes) {
+      req.session.flashError = 'Select at least one ad to update.';
+      req.session.flashMessage = '';
+      res.redirect('/admin/ads');
+      return;
+    }
+
+    req.session.flashMessage = `${result.changes} ad${result.changes === 1 ? '' : 's'} ${desiredStatus === 'active' ? 'activated' : 'deactivated'}.`;
     req.session.flashError = '';
     res.redirect('/admin/ads');
   } catch (error) {
@@ -1119,7 +1734,7 @@ exports.importOptimizedAd = async (req, res, next) => {
       title: `${ad.title} (Optimized)`,
       file_path: ad.optimized_file_path,
       type: 'video',
-      duration_seconds: null,
+      duration_seconds: await resolveAdVideoDurationSeconds(optimizedAbsolutePath),
       status: ad.status,
       sort_order: ad.sort_order,
     });

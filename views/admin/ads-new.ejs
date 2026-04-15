@@ -34,13 +34,18 @@
 
         <label>
           <span>Duration (seconds)</span>
-          <input
-            type="number"
-            name="duration_seconds"
-            min="1"
-            step="1"
-            value="<%= formData.duration_seconds %>"
-          >
+          <div id="ad-duration-field">
+            <input
+              id="ad-duration-input"
+              type="number"
+              name="duration_seconds"
+              min="1"
+              step="1"
+              value="<%= formData.duration_seconds %>"
+              required
+            >
+          </div>
+          <p class="muted" id="ad-duration-helper" style="margin-top: 4px;">Images require a duration in seconds.</p>
         </label>
 
         <label>
@@ -59,6 +64,26 @@
             <option value="inactive" <%= formData.status === 'inactive' ? 'selected' : '' %>>Inactive</option>
             <option value="active" <%= formData.status === 'active' ? 'selected' : '' %>>Active</option>
           </select>
+        </label>
+
+        <label>
+          <span>Start At</span>
+          <input
+            type="datetime-local"
+            name="start_at"
+            value="<%= formData.start_at %>"
+          >
+          <p class="muted" style="margin-top: 4px;">Optional. Leave blank to allow the ad immediately.</p>
+        </label>
+
+        <label>
+          <span>End At</span>
+          <input
+            type="datetime-local"
+            name="end_at"
+            value="<%= formData.end_at %>"
+          >
+          <p class="muted" style="margin-top: 4px;">Optional. Leave blank to keep the ad available.</p>
         </label>
 
         <label>
@@ -90,7 +115,7 @@
           >
         </label>
 
-        <p class="muted">Images require a duration. Videos ignore duration and play until the file ends.</p>
+        <p class="muted">Images require a duration. Video ads play until the file ends.</p>
 
         <div class="form-actions">
           <button type="submit">Upload Ad</button>

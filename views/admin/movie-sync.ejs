@@ -51,12 +51,13 @@
                     <span class="movie-sync-sort-indicator" aria-hidden="true"></span>
                   </button>
                 </th>
-                <th scope="col" class="is-sortable" data-sort-key="duration" data-sort-type="duration" aria-sort="none">
+              <th scope="col" class="is-sortable" data-sort-key="duration" data-sort-type="duration" aria-sort="none">
                   <button type="button" class="movie-sync-sort-button">
                     <span>Duration</span>
                     <span class="movie-sync-sort-indicator" aria-hidden="true"></span>
                   </button>
                 </th>
+                <th scope="col">Screens</th>
                 <th scope="col">Showtimes</th>
                 <th scope="col">Description</th>
               </tr>
@@ -103,6 +104,27 @@
                   <td class="movie-sync-duration-cell">
                     <span class="movie-duration-text"><%= movie.runtime || 'N/A' %></span>
                   </td>
+                  <td class="movie-sync-screens-cell">
+                    <%
+                      const screenValues = [];
+                      const seenScreens = new Set();
+                      (movie.showtimesByDate || []).forEach((entry) => {
+                        (entry.screenTimes || []).forEach((screenEntry) => {
+                          const screenLabel = String(screenEntry.screen || '').trim();
+                          if (!screenLabel || seenScreens.has(screenLabel)) {
+                            return;
+                          }
+                          seenScreens.add(screenLabel);
+                          screenValues.push(screenLabel);
+                        });
+                      });
+                    %>
+                    <% if (screenValues.length > 0) { %>
+                      <span class="movie-sync-screen-list"><%= screenValues.join(', ') %></span>
+                    <% } else { %>
+                      <span class="muted">-</span>
+                    <% } %>
+                  </td>
                   <td class="movie-sync-showtimes-cell">
                     <% if (movie.showtimesByDate.length === 0) { %>
                       <span class="muted"><%= movie.status === 'Coming Soon' ? 'Coming soon' : 'No showtimes yet' %></span>
@@ -111,7 +133,18 @@
                         <% movie.showtimesByDate.forEach((entry) => { %>
                           <div class="movie-showtime-block">
                             <strong class="movie-showtime-date"><%= entry.date %></strong>
-                            <div class="movie-showtime-times muted"><%= entry.times.join(', ') %></div>
+                            <% if (Array.isArray(entry.screenTimes) && entry.screenTimes.length > 0) { %>
+                              <div class="movie-showtime-screen-list">
+                                <% entry.screenTimes.forEach((screenEntry) => { %>
+                                  <div class="movie-showtime-screen-block">
+                                    <strong class="movie-showtime-screen-label"><%= screenEntry.screen %></strong>
+                                    <div class="movie-showtime-times muted"><%= screenEntry.times.join(', ') %></div>
+                                  </div>
+                                <% }); %>
+                              </div>
+                            <% } else { %>
+                              <div class="movie-showtime-times muted"><%= entry.times.join(', ') %></div>
+                            <% } %>
                           </div>
                         <% }); %>
                       </div>

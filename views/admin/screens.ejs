@@ -1,0 +1,101 @@
+<%- include('partials/layout-start', { pageTitle: 'Screen Status' }) %>
+<header class="page-header">
+  <div class="page-header-copy">
+    <h1>Screen Status</h1>
+    <p class="muted">Live heartbeat snapshots for each open player surface.</p>
+  </div>
+  <div class="page-header-actions">
+    <a class="secondary-link" href="/admin/reports">Reports</a>
+    <form method="post" action="/admin/screens/refresh" style="margin: 0;">
+      <input type="hidden" name="group" value="cinema">
+      <button type="submit" class="secondary">Refresh Cinema</button>
+    </form>
+    <form method="post" action="/admin/screens/refresh" style="margin: 0;">
+      <input type="hidden" name="group" value="cinema-3x2">
+      <button type="submit" class="secondary">Refresh 3x2</button>
+    </form>
+    <form method="post" action="/admin/screens/refresh" style="margin: 0;">
+      <input type="hidden" name="group" value="cinema-portrait">
+      <button type="submit" class="secondary">Refresh Portrait</button>
+    </form>
+  </div>
+</header>
+
+<main class="admin-grid report-page">
+  <% if (success) { %>
+    <section class="panel panel-wide">
+      <div class="alert success"><%= success %></div>
+    </section>
+  <% } %>
+
+  <% if (error) { %>
+    <section class="panel panel-wide">
+      <div class="alert error"><%= error %></div>
+    </section>
+  <% } %>
+
+  <section class="panel panel-wide">
+    <div class="panel-heading">
+      <div>
+        <h2>Heartbeat Overview</h2>
+        <p class="muted">Online means the screen reported within the last 90 seconds.</p>
+      </div>
+    </div>
+
+    <% if (!rows || rows.length === 0) { %>
+      <p class="report-empty-state">No heartbeat records have been received yet.</p>
+    <% } else { %>
+      <div class="report-table-wrapper">
+        <table class="report-table">
+          <thead>
+            <tr>
+              <th scope="col">Screen</th>
+              <th scope="col">Site</th>
+              <th scope="col">Screen Name</th>
+              <th scope="col">Page</th>
+              <th scope="col">Now Playing</th>
+              <th scope="col">Mode</th>
+              <th scope="col">Last Seen</th>
+              <th scope="col">Status</th>
+              <th scope="col">Refresh</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% rows.forEach((row) => { %>
+              <tr>
+                <td><strong><%= row.screen %></strong></td>
+                <td><span class="report-meta-text"><%= row.siteLabel %></span></td>
+                <td><span class="report-meta-text"><%= row.screenNameLabel %></span></td>
+                <td><span class="report-meta-text"><%= row.pageLabel %></span></td>
+                <td><span class="report-meta-text"><%= row.nowPlayingLabel %></span></td>
+                <td>
+                  <span class="report-pill <%= row.modeLabel === 'Waiting' ? 'is-muted' : '' %>">
+                    <%= row.modeLabel %>
+                  </span>
+                </td>
+                <td><%= row.lastSeenLabel %></td>
+                <td>
+                  <span class="report-status-badge is-<%= row.statusLabel === 'Online' ? 'online' : 'offline' %>">
+                    <%= row.statusLabel %>
+                  </span>
+                </td>
+                <td>
+                  <form method="post" action="/admin/screens/refresh" style="margin: 0; display: flex; gap: 8px; flex-wrap: wrap;">
+                    <input type="hidden" name="screen" value="<%= row.screen || '' %>">
+                    <input type="hidden" name="screen_name" value="<%= row.screen_name || '' %>">
+                    <input type="hidden" name="site_name" value="<%= row.siteLabel || '' %>">
+                    <input type="hidden" name="page_path" value="<%= row.player_path || '' %>">
+                    <button type="submit" name="scope" value="screen" class="secondary">Refresh</button>
+                    <button type="submit" name="scope" value="site" class="secondary">Refresh Site</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+    <% } %>
+  </section>
+</main>
+
+<%- include('partials/layout-end') %>

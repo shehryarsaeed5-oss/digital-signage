@@ -2,6 +2,10 @@ const adminAdEdit = (() => {
   const form = document.querySelector('#ad-edit-form');
   const messageEl = document.querySelector('#ad-edit-message');
   const submitButton = form?.querySelector('button[type="submit"]');
+  const durationField = document.querySelector('#ad-duration-field');
+  const durationInput = document.querySelector('#ad-duration-input');
+  const durationHelper = document.querySelector('#ad-duration-helper');
+  const isVideoAd = String(form?.dataset.adType || '').toLowerCase() === 'video';
 
   const toggleMessage = (type, text) => {
     if (!messageEl) {
@@ -17,6 +21,28 @@ const adminAdEdit = (() => {
     if (submitButton) {
       submitButton.disabled = disabled;
     }
+  };
+
+  const setImageMode = () => {
+    if (!durationField || !durationInput || !durationHelper) {
+      return;
+    }
+
+    durationField.classList.remove('hidden');
+    durationInput.disabled = false;
+    durationInput.required = true;
+    durationHelper.textContent = 'Images require a duration in seconds.';
+  };
+
+  const setVideoMode = () => {
+    if (!durationField || !durationInput || !durationHelper) {
+      return;
+    }
+
+    durationField.classList.add('hidden');
+    durationInput.disabled = true;
+    durationInput.required = false;
+    durationHelper.textContent = 'This video will play until it ends.';
   };
 
   const parseScreenTargets = (rawValue) => {
@@ -44,23 +70,28 @@ const adminAdEdit = (() => {
     }
 
     const titleInput = form.querySelector('input[name="title"]');
-    const durationInput = form.querySelector('input[name="duration_seconds"]');
     const statusSelect = form.querySelector('select[name="status"]');
     const screensInput = form.querySelector('input[name="screen_targets"]');
+    const startAtInput = form.querySelector('input[name="start_at"]');
+    const endAtInput = form.querySelector('input[name="end_at"]');
 
     const title = titleInput?.value?.trim() || '';
-    const rawDuration = durationInput?.value;
-    const durationValue = rawDuration ? Number.parseInt(rawDuration, 10) : null;
-    const duration = Number.isFinite(durationValue) ? durationValue : null;
     const status = (statusSelect?.value || 'inactive').toLowerCase();
     const screenTargets = parseScreenTargets(screensInput?.value);
 
     const payload = {
       title,
       status,
-      duration,
       screens: screenTargets,
+      start_at: startAtInput?.value || null,
+      end_at: endAtInput?.value || null,
     };
+
+    if (!isVideoAd && durationInput) {
+      const rawDuration = durationInput.value;
+      const durationValue = rawDuration ? Number.parseInt(rawDuration, 10) : null;
+      payload.duration = Number.isFinite(durationValue) ? durationValue : null;
+    }
 
     try {
       disableSubmit(true);
@@ -99,6 +130,12 @@ const adminAdEdit = (() => {
 
   if (!form) {
     return null;
+  }
+
+  if (isVideoAd) {
+    setVideoMode();
+  } else {
+    setImageMode();
   }
 
   form.addEventListener('submit', handleSubmit);

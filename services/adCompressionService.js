@@ -78,6 +78,24 @@ async function getVideoWidth(filePath) {
   }
 }
 
+async function getVideoDurationSeconds(filePath) {
+  try {
+    const { stdout } = await execFileAsync(FFPROBE_PATH, [
+      '-v', 'error',
+      '-show_entries', 'format=duration',
+      '-of', 'default=noprint_wrappers=1:nokey=1',
+      filePath,
+    ]);
+
+    const duration = Number.parseFloat(String(stdout || '').trim());
+    return Number.isFinite(duration) && duration > 0
+      ? Math.max(1, Math.round(duration))
+      : null;
+  } catch (error) {
+    return null;
+  }
+}
+
 async function compressVideoForSignage(sourcePublicPath) {
   ensureAdsUploadsDir();
 
@@ -161,6 +179,7 @@ module.exports = {
   SIGNAGE_COMPRESSION_PROFILE,
   ensureFfmpegAvailable,
   compressVideoForSignage,
+  getVideoDurationSeconds,
   getAbsolutePathFromPublicPath,
   getOptimizedPaths,
 };
